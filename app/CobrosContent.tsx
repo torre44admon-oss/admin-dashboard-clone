@@ -1,8 +1,5 @@
 "use client"
 
-
-"use client"
-
 import { supabase } from "@/lib/supabase"
 import { useEffect, useMemo, useState } from "react"
 import {
