@@ -1,5 +1,5 @@
 "use client"
-
+import { supabase } from "@/lib/supabase"
 import { useEffect, useMemo, useState } from "react"
 import {
   ChevronDown,
@@ -32,11 +32,41 @@ interface RegistroCobro {
 }
 
 export function CobrosContent() {
-  const [filtroMes, setFiltroMes] =
-    useState("Mayo")
+  const meses = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre"
+]
 
-  const [filtroAnio, setFiltroAnio] =
-    useState("2026")
+const hoy = new Date()
+
+let siguienteMes =
+  hoy.getMonth() + 1
+
+let siguienteAnio =
+  hoy.getFullYear()
+
+if (siguienteMes > 11) {
+  siguienteMes = 0
+  siguienteAnio += 1
+}
+
+const [filtroMes, setFiltroMes] =
+  useState(meses[siguienteMes])
+
+const [filtroAnio, setFiltroAnio] =
+  useState(
+    siguienteAnio.toString()
+  )
 
   const [busqueda, setBusqueda] =
     useState("")
@@ -53,121 +83,70 @@ export function CobrosContent() {
     useState<string[]>([])
 
   useEffect(() => {
-    const data =
-      localStorage.getItem("cobros_db")
+
+  async function cargarCobros() {
+
+    const { data, error } = await supabase
+      .from("cobros")
+      .select("*")
+
+    if (error) {
+      console.error(error)
+      return
+    }
 
     if (data) {
-      try {
-        const parsed = JSON.parse(data)
 
-        const datosCorregidos =
-          parsed.map((item: any) => ({
-            fecha:
-              item.fecha || "",
+      const datosCorregidos =
+        data.map((item: any) => ({
 
-            unidad:
-              item.unidad || "",
+          fecha:
+            item.fecha || "",
 
-            propietario:
-              item.propietario || "",
+          unidad:
+            item.unidad || "",
 
-            telefono:
-              item.telefono || "",
+          propietario:
+            item.propietario || "",
 
-            correo:
-              item.correo || "",
+          telefono:
+            item.telefono || "",
 
-            periodo:
-              item.periodo || "",
+          correo:
+            item.correo || "",
 
-            mes:
-              item.mes || "",
+          periodo:
+            item.periodo || "",
 
-            anio:
-              item.anio || "",
+          mes:
+            item.mes || "",
 
-            cuotaAdministrativa:
-              item.cuotaAdministrativa ||
-              item.total ||
-              "$0",
+          anio:
+            item.anio || "",
 
-            cargosAdicionales:
-              Array.isArray(
-                item.cargosAdicionales
-              )
-                ? item.cargosAdicionales
-                : [],
+          cuotaAdministrativa:
+            item.cuotaAdministrativa ||
+            "$0",
 
-            total:
-              item.total || "$0",
-          }))
+          cargosAdicionales:
+            Array.isArray(
+              item.cargosAdicionales
+            )
+              ? item.cargosAdicionales
+              : [],
 
-        setCobros(datosCorregidos)
-      } catch {
-        localStorage.removeItem(
-          "cobros_db"
-        )
-      }
-    } else {
-      const baseCobros: RegistroCobro[] =
-        [
-          {
-            fecha:
-              "24 Mayo 2026",
+          total:
+            item.total || "$0",
 
-            unidad: "403",
+        }))
 
-            propietario:
-              "janeth soloarte",
-
-            telefono:
-              "3152127700",
-
-            correo:
-              "perdomeoloy128@gmail.com",
-
-            periodo:
-              "Mayo 2026",
-
-            mes: "Mayo",
-
-            anio: "2026",
-
-            cuotaAdministrativa:
-              "$20.000",
-
-            cargosAdicionales:
-              [
-                {
-                  concepto:
-                    "Multa - ruido",
-
-                  valor:
-                    "$35.000",
-                },
-
-                {
-                  concepto:
-                    "Proyecto - pintura",
-
-                  valor:
-                    "$75.000",
-                },
-              ],
-
-            total:
-              "$130.000",
-          },
-        ]
-
-      setCobros(baseCobros)
-
-      localStorage.setItem(
-        "cobros_db",
-        JSON.stringify(baseCobros)
-      )
+      setCobros(datosCorregidos)
     }
-  }, [])
+  }
+
+  cargarCobros()
+
+}, [])
 
   const cobrosFiltrados =
     cobros.filter((item) => {

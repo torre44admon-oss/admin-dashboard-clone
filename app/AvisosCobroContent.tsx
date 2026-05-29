@@ -1,5 +1,6 @@
 "use client"
 
+import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
 import { Plus, FileText, Send, Trash2 } from "lucide-react"
 import { AgregarLineaModal } from "./AgregarLineaModal"
@@ -266,16 +267,23 @@ export function AvisosCobroContent({ apartamentos }: Props) {
   estado: "Pendiente"
 }
 
-    const cobrosGuardados = JSON.parse(
-      localStorage.getItem("cobros_db") || "[]"
-    )
+const cobrosGuardados = JSON.parse(
+  localStorage.getItem("cobros_db") || "[]"
+)
 
-    cobrosGuardados.push(nuevoCobro)
+cobrosGuardados.push(nuevoCobro)
 
-    localStorage.setItem(
-      "cobros_db",
-      JSON.stringify(cobrosGuardados)
-    )
+localStorage.setItem(
+  "cobros_db",
+  JSON.stringify(cobrosGuardados)
+)
+
+const { data, error } = await supabase
+  .from("cobros")
+  .insert([nuevoCobro])
+
+console.log("DATA:", data)
+console.log("ERROR:", error)
 
     const plantillaElementId = "plantilla-to-export"
 
