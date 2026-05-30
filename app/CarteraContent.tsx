@@ -42,9 +42,9 @@ async function cargarCartera() {
 
   const mapaDeudas: Record<string, number> = {};
 
-  carteraData.forEach((item) => {
-    mapaDeudas[item.unidad] = item.deuda;
-  });
+  (carteraData || []).forEach((item) => {
+  mapaDeudas[item.unidad] = item.deuda;
+});
 
   setDeudas(mapaDeudas);
 
@@ -63,17 +63,35 @@ async function cargarCartera() {
 }
 
   const cerrarModal = () => { setIsModalOpen(false); setUnidadSeleccionada(""); setMonto(""); };
-  const handleRegistrarMovimiento = (tipo: "deuda" | "pago") => {
+  const handleRegistrarMovimiento = async (
+  tipo: "deuda" | "pago"
+) => {
     if (!unidadSeleccionada || !monto || Number(monto) <= 0) return;
     const montoNum = Number(monto);
     const saldoActual = deudas[unidadSeleccionada] || 0;
-    let nuevaDeuda = tipo === "deuda" ? saldoActual + montoNum : saldoActual - montoNum;
-    if (nuevaDeuda < 0) nuevaDeuda = 0;
+    let nuevaDeuda =
+  tipo === "deuda"
+    ? saldoActual + montoNum
+    : saldoActual - montoNum;
+
+if (nuevaDeuda < 0) nuevaDeuda = 0;
+
+const { error: upsertError } = await supabase
+  .from("cartera")
+  .upsert({
+    unidad: unidadSeleccionada,
+    deuda: nuevaDeuda
+  });
+
+if (upsertError) {
+  console.error(upsertError);
+  alert("Error actualizando cartera");
+  return;
+}
 
     const copiaDeudas = { ...deudas, [unidadSeleccionada]: nuevaDeuda };
     setDeudas(copiaDeudas);
-    localStorage.setItem("torre_cartera_db", JSON.stringify(copiaDeudas));
-
+    
     const hoy = new Date();
     const nuevoMov = {
       id: Date.now().toString(),
@@ -83,10 +101,24 @@ async function cargarCartera() {
       fecha: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`,
       saldoResultante: nuevaDeuda
     };
-    const nuevoHistorial = [nuevoMov, ...historial];
-    setHistorial(nuevoHistorial);
-    localStorage.setItem("torre_historial_db", JSON.stringify(nuevoHistorial));
-    cerrarModal();
+    const { error } = await supabase
+  .from("historial_cartera")
+  .insert({
+    unidad: unidadSeleccionada,
+    tipo,
+    monto: montoNum,
+    fecha: nuevoMov.fecha,
+    saldoResultante: nuevaDeuda
+  });
+
+if (error) {
+  console.error(error);
+  alert("Error guardando historial");
+  return;
+}
+
+await cargarCartera();
+cerrarModal();
   };
 
   const handleCheckboxChange = (id: string) => {
