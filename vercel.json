@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/envio-automatico",
+      "schedule": "0 8 1 * *"
+    }
+  ]
+}

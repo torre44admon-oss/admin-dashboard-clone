@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Plus, FileText, Send, Trash2 } from "lucide-react"
 import { AgregarLineaModal } from "./AgregarLineaModal"
 import { PlantillaPropietario } from "../components/dashboard/PlantillaPropietario"
@@ -82,13 +83,25 @@ export function AvisosCobroContent({ apartamentos }: Props) {
       })
 
       // Conexión máster con torre_cartera_db
-      const carteraGuardada = localStorage.getItem("torre_cartera_db")
-      if (carteraGuardada && aptoActual) {
-        const baseDeCartera = JSON.parse(carteraGuardada)
-        setSaldoMoraCalculado(baseDeCartera[aptoActual.unidad] || 0)
-      } else {
-        setSaldoMoraCalculado(0)
-      }
+      if (aptoActual) {
+  const cargarDeuda = async () => {
+    const { data, error } = await supabase
+      .from("cartera")
+      .select("deuda")
+      .eq("unidad", aptoActual.unidad)
+      .single()
+
+    if (error) {
+      console.error(error)
+      setSaldoMoraCalculado(0)
+      return
+    }
+
+    setSaldoMoraCalculado(data?.deuda || 0)
+  }
+
+  cargarDeuda()
+}
 
     } else {
       setCuotaBase(null)
@@ -195,6 +208,26 @@ export function AvisosCobroContent({ apartamentos }: Props) {
       return false
     }
   }
+async function uploadAvisoImage(blob: Blob) {
+  const fileName = `aviso-${Date.now()}.png`
+
+  const { error } = await supabase.storage
+    .from("avisos")
+    .upload(fileName, blob, {
+      contentType: "image/png",
+      upsert: true,
+    })
+
+  if (error) {
+    throw error
+  }
+
+  const { data } = supabase.storage
+    .from("avisos")
+    .getPublicUrl(fileName)
+
+  return data.publicUrl
+}
 
   function downloadBlob(blob: Blob, filename = "aviso.pdf") {
     const url = URL.createObjectURL(blob)
@@ -306,32 +339,40 @@ console.log("ERROR:", error)
       }
 
       const mensajeTexto =
-        `Hola ${aptoActual.propietario}, le envío su aviso de cobro para ${periodoTexto}.`
+  `Hola ${aptoActual.propietario}, le envío su aviso de cobro para ${periodoTexto}.`
 
-      const mensaje = encodeURIComponent(mensajeTexto)
+const pngBlob =
+  await generatePngBlobFromElement(
+    plantillaEl as HTMLElement
+  )
 
-      const pngBlob =
-        await generatePngBlobFromElement(
-          plantillaEl as HTMLElement
-        )
+const imageUrl =
+  await uploadAvisoImage(pngBlob)
 
-      const copied =
-        await copyImageBlobToClipboard(pngBlob)
+await fetch("/api/whatsapp", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    telefono: phoneIntl,
+    mensaje: mensajeTexto,
+    imageUrl,
+  }),
+})
+
+const copied =
+  await copyImageBlobToClipboard(pngBlob)
 
       if (copied) {
-        setIdAptoSeleccionado("")
-        setCargosAdicionales([])
-        setCuotaBase(null)
+  setIdAptoSeleccionado("")
+  setCargosAdicionales([])
+  setCuotaBase(null)
 
-        alert(
-          "La imagen del aviso se copió al portapapeles."
-        )
+     toast.success("Aviso enviado por WhatsApp correctamente.")
 
-        window.location.href =
-          `whatsapp://send?phone=${phoneIntl}&text=${mensaje}`
-
-        return
-      }
+  return
+}
 
       const pdfBlob =
         await generatePdfBlobFromElement(
@@ -343,10 +384,6 @@ console.log("ERROR:", error)
         `aviso_${aptoActual.unidad}.pdf`
       )
 
-      const waUrl =
-        `https://wa.me/${encodeURIComponent(phoneIntl)}?text=${mensaje}`
-
-      window.open(waUrl, "_blank")
 
       alert(
         "Se descargó el PDF y se abrió WhatsApp."
@@ -593,4 +630,4 @@ console.log("ERROR:", error)
       </div>
     </div>
   )
-}
+} 

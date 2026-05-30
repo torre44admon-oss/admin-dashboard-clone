@@ -1,4 +1,5 @@
 "use client";
+import { supabase } from "@/lib/supabase";
 import React, { useState, useEffect } from "react";
 import { X, DollarSign, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 
@@ -24,12 +25,42 @@ export function CarteraContent({ apartamentos }: CarteraContentProps) {
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
   const [movimientosAImprimir, setMovimientosAImprimir] = useState<HistorialMovimiento[]>([]);
 
-  useEffect(() => {
-    const deudasGuardadas = localStorage.getItem("torre_cartera_db");
-    const historialGuardado = localStorage.getItem("torre_historial_db");
-    if (deudasGuardadas) setDeudas(JSON.parse(deudasGuardadas));
-    if (historialGuardado) setHistorial(JSON.parse(historialGuardado));
-  }, []);
+ useEffect(() => {
+  cargarCartera();
+}, []);
+
+async function cargarCartera() {
+  const { data: carteraData, error: carteraError } =
+    await supabase
+      .from("cartera")
+      .select("*");
+
+  if (carteraError) {
+    console.error(carteraError);
+    return;
+  }
+
+  const mapaDeudas: Record<string, number> = {};
+
+  carteraData.forEach((item) => {
+    mapaDeudas[item.unidad] = item.deuda;
+  });
+
+  setDeudas(mapaDeudas);
+
+  const { data: historialData, error: historialError } =
+    await supabase
+      .from("historial_cartera")
+      .select("*")
+      .order("id", { ascending: false });
+
+  if (historialError) {
+    console.error(historialError);
+    return;
+  }
+
+  setHistorial(historialData || []);
+}
 
   const cerrarModal = () => { setIsModalOpen(false); setUnidadSeleccionada(""); setMonto(""); };
   const handleRegistrarMovimiento = (tipo: "deuda" | "pago") => {
