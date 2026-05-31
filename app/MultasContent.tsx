@@ -15,7 +15,7 @@ interface RegistroPortafolio {
   fecha: string
   unidad: string
   propietario: string
-  periodo: string
+  Estado: string
   cargo: string
   total: string
 }
@@ -27,10 +27,12 @@ export function MultasContent() {
   const [isMultaModalOpen, setIsMultaModalOpen] = useState(false)
   const [multas, setMultas] = useState<Multa[]>([])
   const [registrosPortafolio, setRegistrosPortafolio] = useState<RegistroPortafolio[]>([])
+  const [multasAsignadas, setMultasAsignadas] = useState<any[]>([])
   const [buscarTexto, setBuscarTexto] = useState("")
 
   useEffect(() => {
   cargarMultas()
+  cargarMultasAsignadas()
 }, [])
 const cargarMultas = async () => {
   const { data, error } = await supabase
@@ -45,16 +47,34 @@ const cargarMultas = async () => {
 
   setMultas(data || [])
 }
+const cargarMultasAsignadas = async () => {
+  const { data, error } = await supabase
+    .from("multas_asignadas")
+    .select("*")
+    .order("fecha", { ascending: false })
+
+  if (error) {
+    console.error(error)
+    return
+  }
+
+  setMultasAsignadas(data || [])
+}
 
   const saveM = (n: Multa[]) => { setMultas(n); localStorage.setItem("multas_db", JSON.stringify(n)) }
   const savePortafolioH = (n: RegistroPortafolio[]) => { setRegistrosPortafolio(n); localStorage.setItem("portafolio_db", JSON.stringify(n)) }
 
-  const registrosFiltrados = registrosPortafolio.filter((item) => {
-    const busqueda = buscarTexto.toLowerCase()
-    const porUnidad = item.unidad.toLowerCase().includes(busqueda)
-    const porPropietario = item.propietario.toLowerCase().includes(busqueda)
-    return porUnidad || porPropietario
-  })
+  const registrosFiltrados = multasAsignadas.filter((item) => {
+  const busqueda = buscarTexto.toLowerCase()
+
+  const porUnidad =
+    item.unidad?.toLowerCase().includes(busqueda)
+
+  const porPropietario =
+    item.propietario?.toLowerCase().includes(busqueda)
+
+  return porUnidad || porPropietario
+})
 
   return (
     <div className="font-sans text-[#1e293b]">
@@ -173,7 +193,7 @@ const cargarMultas = async () => {
                   <th className="px-6 py-3.5 font-bold">Fecha</th>
                   <th className="px-6 py-3.5 font-bold">Unidad</th>
                   <th className="px-6 py-3.5 font-bold">Propietario</th>
-                  <th className="px-6 py-3.5 font-bold">Período</th>
+                  <th className="px-6 py-3.5 font-bold">Estado</th>
                   <th className="px-6 py-3.5 font-bold">Cargos adicionales</th>
                   <th className="px-6 py-3.5 font-bold">Total</th>
                   <th className="px-6 py-3.5 font-bold text-center no-imprimir-buscador">Acciones</th>
@@ -186,19 +206,42 @@ const cargarMultas = async () => {
                   </tr>
                 ) : (
                   registrosFiltrados.map((item, i) => (
-                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-400 whitespace-nowrap">{item.fecha}</td>
-                      <td className="px-6 py-4 font-bold text-[#1e293b]">{item.unidad}</td>
-                      <td className="px-6 py-4 font-bold text-gray-700 capitalize">{item.propietario}</td>
-                      <td className="px-6 py-4 font-semibold text-gray-500">{item.periodo}</td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-orange-50 text-orange-600 border border-orange-100 rounded">
-                          {item.cargo}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-extrabold text-[#1d4ed8]">{item.total}</td>
+                    <tr key={i}>
+  <td className="px-6 py-4">
+    {item.fecha}
+  </td>
+
+  <td className="px-6 py-4 font-bold">
+    {item.unidad}
+  </td>
+
+  <td className="px-6 py-4">
+    {item.propietario}
+  </td>
+
+  <td className="px-6 py-4">
+    {item.estado}
+  </td>
+
+  <td className="px-6 py-4">
+    <span className="inline-flex items-center px-2 py-0.5 text-xs font-bold bg-orange-50 text-orange-600 border border-orange-100 rounded">
+      {item.tipo_multa}
+    </span>
+  </td>
+
+  <td className="px-6 py-4 font-extrabold text-[#1d4ed8]">
+    {item.valor}
+  </td>
+
+  <td className="px-6 py-4 text-center no-imprimir-buscador">
+    <button>
+      <Trash2 className="w-4 h-4" />
+    </button>
+  </td>
                       <td className="px-6 py-4 text-center no-imprimir-buscador">
-                        <button onClick={() => savePortafolioH(registrosPortafolio.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 p-1 transition-colors cursor-pointer">
+                        <button
+  className="text-red-400 hover:text-red-600 p-1 transition-colors cursor-pointer"
+>
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>

@@ -3,8 +3,7 @@
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Plus, FileText, Send, Trash2 } from "lucide-react"
-import { AgregarLineaModal } from "./AgregarLineaModal"
+import { FileText, Send, Trash2 } from "lucide-react"
 import { PlantillaPropietario } from "../components/dashboard/PlantillaPropietario"
 import html2canvas from "html2canvas-pro"
 import jsPDF from "jspdf"
@@ -51,8 +50,6 @@ export function AvisosCobroContent({ apartamentos }: Props) {
     siguienteAnio.toString()
   )
   const [idAptoSeleccionado, setIdAptoSeleccionado] = useState("")
-  const [isLineaModalOpen, setIsLineaModalOpen] = useState(false)
-
   const [cuotaBase, setCuotaBase] = useState<LineaAviso | null>(null)
   const [cargosAdicionales, setCargosAdicionales] = useState<LineaAviso[]>([])
   const [mensajeConfigurado, setMensajeConfigurado] = useState("")
@@ -114,18 +111,6 @@ export function AvisosCobroContent({ apartamentos }: Props) {
     (cuotaBase ? cuotaBase.monto : 0) +
     saldoMoraCalculado +
     cargosAdicionales.reduce((acc, l) => acc + l.monto, 0)
-
-  const handleAgregarNuevaLineaFactura = (nueva: any) => {
-    const montoNumerico =
-      typeof nueva.monto === "string"
-        ? parseInt(nueva.monto.replace(/[^0-9]/g, ""), 10) || 0
-        : Number(nueva.monto) || 0
-
-    setCargosAdicionales([
-      ...cargosAdicionales,
-      { ...nueva, monto: montoNumerico }
-    ])
-  }
 
   const handleEliminarCargo = (indexParaBorrar: number) => {
     setCargosAdicionales(
@@ -559,16 +544,7 @@ const copied =
               </div>
             </div>
           )}
-          {/* BOTONES ADICIONALES ORIGINALES */}
-          <button
-            type="button"
-            onClick={() => setIsLineaModalOpen(true)}
-            className="flex items-center gap-1 text-sm font-semibold text-[#2d4486] hover:underline cursor-pointer mb-6"
-          >
-            <Plus className="w-4 h-4" />
-            Agregar línea
-          </button>
-
+          
           {/* TOTAL */}
           <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl py-3 px-4 flex justify-between items-center mb-6">
             <div>
@@ -590,12 +566,6 @@ const copied =
           <p className="text-center text-[12px] text-gray-400 leading-relaxed max-w-[650px] mx-auto">
             {mensajeConfigurado}
           </p>
-
-          <AgregarLineaModal
-            isOpen={isLineaModalOpen}
-            onClose={() => setIsLineaModalOpen(false)}
-            onAgregar={handleAgregarNuevaLineaFactura}
-          />
         </div>
       )}
 
