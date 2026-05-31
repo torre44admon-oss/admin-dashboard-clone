@@ -1,9 +1,16 @@
 "use client"
+import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
 import { Plus, Pencil, Trash2, Search, Printer } from "lucide-react"
 import { NuevaMultaModal } from "./NuevaMultaModal"
 
-interface Multa { t: string; m: string; d: string }
+interface Multa {
+  id?: number
+  t: string
+  m: string
+  d: string
+}
+
 interface RegistroPortafolio {
   fecha: string
   unidad: string
@@ -18,20 +25,26 @@ export function MultasContent() {
   "multas" | "asignacion" | "portafolio"
 >("multas")
   const [isMultaModalOpen, setIsMultaModalOpen] = useState(false)
-  const [multas, setMultas] = useState<Multa[]>([{ t: "ruido", m: "$ 35.000", d: "exeso" }])
+  const [multas, setMultas] = useState<Multa[]>([])
   const [registrosPortafolio, setRegistrosPortafolio] = useState<RegistroPortafolio[]>([])
   const [buscarTexto, setBuscarTexto] = useState("")
 
   useEffect(() => {
-    const m = localStorage.getItem("multas_db")
-    if (m) setMultas(JSON.parse(m))
-    
-    const p = localStorage.getItem("portafolio_db")
-    if (p) {
-      setRegistrosPortafolio(JSON.parse(p))
-    
-    }
-  }, [activeTab])
+  cargarMultas()
+}, [])
+const cargarMultas = async () => {
+  const { data, error } = await supabase
+    .from("multas")
+    .select("*")
+    .order("id")
+
+  if (error) {
+    console.error(error)
+    return
+  }
+
+  setMultas(data || [])
+}
 
   const saveM = (n: Multa[]) => { setMultas(n); localStorage.setItem("multas_db", JSON.stringify(n)) }
   const savePortafolioH = (n: RegistroPortafolio[]) => { setRegistrosPortafolio(n); localStorage.setItem("portafolio_db", JSON.stringify(n)) }
@@ -198,7 +211,14 @@ export function MultasContent() {
         </div>
       )}
 
-      <NuevaMultaModal isOpen={isMultaModalOpen} onClose={() => setIsMultaModalOpen(false)} onSave={(nM) => { saveM([...multas, nM]); setIsMultaModalOpen(false) }} />
+      <NuevaMultaModal
+  isOpen={isMultaModalOpen}
+  onClose={() => setIsMultaModalOpen(false)}
+  onSave={(nM) => {
+    saveM([...multas, nM])
+    setIsMultaModalOpen(false)
+  }}
+/>
     </div>
   )
 }
