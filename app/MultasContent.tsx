@@ -14,7 +14,9 @@ interface RegistroPortafolio {
 }
 
 export function MultasContent() {
-  const [activeTab, setActiveTab] = useState<"multas" | "portafolio">("multas")
+  const [activeTab, setActiveTab] = useState<
+  "multas" | "asignacion" | "portafolio"
+>("multas")
   const [isMultaModalOpen, setIsMultaModalOpen] = useState(false)
   const [multas, setMultas] = useState<Multa[]>([{ t: "ruido", m: "$ 35.000", d: "exeso" }])
   const [registrosPortafolio, setRegistrosPortafolio] = useState<RegistroPortafolio[]>([])
@@ -27,12 +29,7 @@ export function MultasContent() {
     const p = localStorage.getItem("portafolio_db")
     if (p) {
       setRegistrosPortafolio(JSON.parse(p))
-    } else {
-      const basePortafolio = [
-        { fecha: "23 de mayo de 2026", unidad: "Apto. 303", propietario: "Sandra Perdomo", periodo: "Mayo de 2026", cargo: "ruido", total: "$ 55.000" }
-      ]
-      setRegistrosPortafolio(basePortafolio)
-      localStorage.setItem("portafolio_db", JSON.stringify(basePortafolio))
+    
     }
   }, [activeTab])
 
@@ -83,10 +80,42 @@ export function MultasContent() {
       </div>
 
       {/* Selectores de Pestañas (Se ocultará automáticamente al imprimir) */}
-      <div className="flex gap-2 mb-6 bg-gray-100/50 p-1 rounded-xl max-w-[210px] border border-[#e2e8f0] clase-tabs-ocultar-print">
-        <button onClick={() => setActiveTab("multas")} className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${activeTab === "multas" ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]" : "text-[#64748b]"}`}>Multas</button>
-        <button onClick={() => setActiveTab("portafolio")} className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${activeTab === "portafolio" ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]" : "text-[#64748b]"}`}>Portafolio</button>
-      </div>
+      <div className="flex gap-2 mb-6 bg-gray-100/50 p-1 rounded-xl border border-[#e2e8f0] w-fit">
+
+  <button
+    onClick={() => setActiveTab("multas")}
+    className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${
+      activeTab === "multas"
+        ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]"
+        : "text-[#64748b]"
+    }`}
+  >
+    Multas
+  </button>
+
+  <button
+    onClick={() => setActiveTab("asignacion")}
+    className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${
+      activeTab === "asignacion"
+        ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]"
+        : "text-[#64748b]"
+    }`}
+  >
+    Asignación
+  </button>
+
+  <button
+    onClick={() => setActiveTab("portafolio")}
+    className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${
+      activeTab === "portafolio"
+        ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]"
+        : "text-[#64748b]"
+    }`}
+  >
+    Portafolio
+  </button>
+
+</div>
 
       {activeTab === "multas" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

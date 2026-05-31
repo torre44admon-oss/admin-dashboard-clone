@@ -76,17 +76,26 @@ async function cargarCartera() {
 
 if (nuevaDeuda < 0) nuevaDeuda = 0;
 
-const { error: upsertError } = await supabase
+const existe = await supabase
   .from("cartera")
-  .upsert({
-    unidad: unidadSeleccionada,
-    deuda: nuevaDeuda
-  });
+  .select("id")
+  .eq("unidad", unidadSeleccionada)
+  .maybeSingle();
 
-if (upsertError) {
-  console.error(upsertError);
-  alert("Error actualizando cartera");
-  return;
+if (existe.data) {
+  await supabase
+    .from("cartera")
+    .update({
+      deuda: nuevaDeuda
+    })
+    .eq("unidad", unidadSeleccionada);
+} else {
+  await supabase
+    .from("cartera")
+    .insert({
+      unidad: unidadSeleccionada,
+      deuda: nuevaDeuda
+    });
 }
 
     const copiaDeudas = { ...deudas, [unidadSeleccionada]: nuevaDeuda };
