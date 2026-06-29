@@ -8,6 +8,9 @@ export async function POST(request: Request) {
       telefono,
       imageUrl,
     } = await request.json();
+    
+console.log("ENVIANDO IMAGEN:", imageUrl);
+console.log("TELEFONO:", telefono);
 
     const response = await fetch(
       `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -18,24 +21,26 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: telefono,
-          type: "image",
-          image: {
-            link: imageUrl,
-            caption: mensaje,
-          },
-        }),
+  messaging_product: "whatsapp",
+  to: telefono,
+  type: "image",
+  image: {
+    link: imageUrl,
+    caption: mensaje,
+  },
+})
       }
     );
 
     const data = await response.json();
 
-    console.log("META RESPONSE:", data);
-
-    return NextResponse.json(data, {
-      status: response.status,
-    });
+    console.log(
+  "META RESPONSE:",
+  JSON.stringify(data, null, 2)
+);
+return NextResponse.json(data, {
+  status: response.status,
+});
 
   } catch (error) {
 

@@ -41,7 +41,7 @@ const mainMenuItems: {
 }[] = [
   {
     icon: LayoutDashboard,
-    label: "Resumen",
+    label: "Panel Principal",
     page: "resumen"
   },
 

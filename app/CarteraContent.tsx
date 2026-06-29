@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import React, { useState, useEffect } from "react";
 import { X, DollarSign, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
+import { toast } from "sonner"
 
 interface ApartamentoProp { unidad: string; propietario: string; }
 interface CarteraContentProps { apartamentos: ApartamentoProp[]; }
@@ -39,6 +40,69 @@ async function cargarCartera() {
     console.error(carteraError);
     return;
   }
+  // REVISAR MULTAS VENCIDAS
+const hoy = new Date()
+
+const { data: multasVencidas } = await supabase
+  .from("multas_asignadas")
+  .select("*")
+  .eq("estado", "Vencida")
+
+for (const multa of multasVencidas || []) {
+
+  if (!multa.fecha_vencimiento) continue
+
+  const fechaVence = new Date(
+    multa.fecha_vencimiento
+  )
+
+  if (hoy > fechaVence) {
+
+    // BUSCAR DEUDA ACTUAL
+    const { data: carteraActual } = await supabase
+      .from("cartera")
+      .select("*")
+      .eq("unidad", multa.unidad)
+      .maybeSingle()
+
+    const deudaActual =
+      carteraActual?.deuda || 0
+
+    const valorMulta =
+      Number(
+        String(multa.valor)
+          .replace(/[^0-9]/g, "")
+      ) || 0
+
+    // SUMAR MULTA A CARTERA
+    if (carteraActual) {
+
+      await supabase
+        .from("cartera")
+        .update({
+          deuda: deudaActual + valorMulta
+        })
+        .eq("unidad", multa.unidad)
+
+    } else {
+
+      await supabase
+        .from("cartera")
+        .insert({
+          unidad: multa.unidad,
+          deuda: valorMulta
+        })
+    }
+
+    // MARCAR MULTA COMO VENCIDA
+    await supabase
+      .from("multas_asignadas")
+      .update({
+        estado: "Vencida"
+      })
+      .eq("id", multa.id)
+  }
+}
 
   const mapaDeudas: Record<string, number> = {};
 
@@ -122,7 +186,7 @@ if (existe.data) {
 
 if (error) {
   console.error(error);
-  alert("Error guardando historial");
+  toast.error("Error guardando historial");
   return;
 }
 
@@ -256,7 +320,28 @@ cerrarModal();
                           })}
                         </div>
                         <div className="flex justify-end pt-4">
-                          <button type="button" onClick={() => { const filtrados = movs.filter(m => seleccionados.includes(m.id)); if (filtrados.length === 0) { alert("Marca al menos un cuadrito."); return; } ejecutarImpresion(filtrados); }} style={{ backgroundColor: "#10b981", color: "#ffffff" }} className="flex flex-col items-center justify-center h-[64px] w-[160px] rounded-xl shadow-md hover:opacity-95 text-center p-2 cursor-pointer">
+                          <button
+  type="button"
+  onClick={() => {
+    const filtrados = movs.filter(
+      m => seleccionados.includes(m.id)
+    )
+
+    if (filtrados.length === 0) {
+      toast.warning(
+        "Marca al menos un cuadrito."
+      )
+      return
+    }
+
+    ejecutarImpresion(filtrados)
+  }}
+  style={{
+    backgroundColor: "#10b981",
+    color: "#ffffff"
+  }}
+  className="flex flex-col items-center justify-center h-[64px] w-[160px] rounded-xl shadow-md hover:opacity-95 text-center p-2 cursor-pointer"
+>
                             <svg className="w-4 h-4 mb-0.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h6z"/></svg>
                             <span className="text-[10px] font-black uppercase tracking-wider block">Imprimir</span><span className="text-[9px] font-bold uppercase tracking-wider opacity-90 block">seleccionados</span>
                           </button>

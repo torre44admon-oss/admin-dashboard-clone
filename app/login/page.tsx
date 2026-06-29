@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 
 import {
   Building2,
@@ -145,493 +146,127 @@ export default function LoginPage() {
     ) {
 
       // GUARDAR SESION
-
       localStorage.setItem(
         "torre_admin_session",
         "ok"
       )
 
-      // REDIRECCIONAR
+      toast.success("¡Inicio de sesión exitoso!", {
+        description: "Redireccionando al panel principal..."
+      })
 
-      window.location.href = "/"
+      // REDIRECCIONAR
+      setTimeout(() => {
+        window.location.href = "/"
+      }, 800)
 
     } else {
-
-      alert(
-        "Usuario o contraseña incorrectos"
-      )
-
+      toast.error("Usuario o contraseña incorrectos", {
+        description: "Por favor, verifica tus datos de acceso."
+      })
     }
 
   }
 
   return (
+    <div className="min-h-screen w-full relative flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50 overflow-hidden font-sans">
+      {/* BACKGROUND ELEMENTS */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] max-w-[600px] rounded-full bg-blue-400/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] max-w-[600px] rounded-full bg-indigo-400/10 blur-[120px] pointer-events-none" />
 
-    <div
-      style={{
-        minHeight: "100vh",
-        width: "100%",
-        overflow: "hidden",
-        position: "relative",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background:
-          "linear-gradient(135deg,#edf4ff 0%,#dbeafe 100%)",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-
-      {/* CIRCULO */}
-
-      <div
-        style={{
-          position: "absolute",
-          top: "-80px",
-          left: "-80px",
-          width: "260px",
-          height: "260px",
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle,#93c5fd 0%,#bfdbfe 60%,transparent 70%)",
-          opacity: 0.7,
-        }}
-      />
-
-      {/* FONDO DERECHO */}
-
-      <div
-        style={{
-          position: "absolute",
-          top: "-140px",
-          right: "-120px",
-          width: "420px",
-          height: "320px",
-          background:
-            "linear-gradient(135deg,#1d4ed8,#2563eb)",
-          borderRadius: "50%",
-          transform: "rotate(-12deg)",
-        }}
-      />
-
-      {/* FONDO IZQUIERDO */}
-
-      <div
-        style={{
-          position: "absolute",
-          bottom: "-150px",
-          left: "-120px",
-          width: "420px",
-          height: "320px",
-          background:
-            "linear-gradient(135deg,#60a5fa,#2563eb)",
-          borderRadius: "50%",
-          transform: "rotate(12deg)",
-        }}
-      />
-
-      {/* CARD */}
-
-      <div
-        style={{
-          width: "420px",
-          background: "rgba(255,255,255,0.94)",
-          borderRadius: "30px",
-          padding: "30px 30px 26px",
-          position: "relative",
-          zIndex: 10,
-          boxShadow:
-            "0 18px 40px rgba(37,99,235,0.16)",
-          border:
-            "1px solid rgba(255,255,255,0.7)",
-          backdropFilter: "blur(10px)",
-        }}
-      >
-
-        {/* PUNTOS */}
-
-        <div
-          style={{
-            position: "absolute",
-            top: "30px",
-            right: "30px",
-            display: "grid",
-            gridTemplateColumns: "repeat(4,6px)",
-            gap: "6px",
-          }}
-        >
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: "4px",
-                height: "4px",
-                borderRadius: "50%",
-                background: "#2563eb",
-                opacity: 0.7,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* ICONO */}
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: "16px",
-          }}
-        >
-
-          <div
-            style={{
-              width: "82px",
-              height: "82px",
-              borderRadius: "24px",
-              background:
-                "linear-gradient(135deg,#2563eb,#1d4ed8)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              boxShadow:
-                "0 12px 25px rgba(37,99,235,0.30)",
-              position: "relative",
-            }}
-          >
-
-            <div
-              style={{
-                position: "absolute",
-                inset: "-14px",
-                borderRadius: "30px",
-                background:
-                  "rgba(37,99,235,0.08)",
-              }}
-            />
-
-            <Building2
-              size={40}
-              color="#ffffff"
-              style={{
-                position: "relative"
-              }}
-            />
-
+      {/* LOGIN CARD */}
+      <div className="relative w-full max-w-[440px] bg-white/70 backdrop-blur-xl border border-white/80 rounded-3xl p-8 md:p-10 shadow-[0_20px_50px_rgba(37,99,235,0.08)] z-10 animate-[fadeIn_0.5s_ease-out]">
+        
+        {/* LOGO CONTAINER */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 mb-4 group transition-transform duration-300 hover:scale-105">
+            <Building2 size={32} className="text-white" />
+            <div className="absolute -inset-2 bg-blue-500/10 rounded-[20px] -z-10 animate-pulse" />
           </div>
-
-        </div>
-
-        {/* TITULO */}
-
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: "22px",
-          }}
-        >
-
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "31px",
-              fontWeight: "bold",
-              color: "#0f172a",
-            }}
-          >
-            Sistema Administrativo
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+            Torre Admin
           </h1>
-
-          <div
-            style={{
-              width: "150px",
-              height: "3px",
-              borderRadius: "999px",
-              background:
-                "linear-gradient(90deg,#2563eb,#60a5fa)",
-              margin: "14px auto 12px",
-              position: "relative",
-            }}
-          >
-
-            <div
-              style={{
-                position: "absolute",
-                width: "10px",
-                height: "10px",
-                borderRadius: "50%",
-                background: "#2563eb",
-                left: "50%",
-                top: "-3px",
-                transform: "translateX(-50%)",
-              }}
-            />
-
-          </div>
-
-          <p
-            style={{
-              margin: 0,
-              color: "#64748b",
-              fontSize: "15px",
-            }}
-          >
-            Accede a tu cuenta para continuar
+          <p className="text-sm text-slate-500 mt-1">
+            Ingresa tus credenciales de acceso
           </p>
-
         </div>
 
-        {/* USUARIO */}
-
-        <div style={{ marginBottom: "14px" }}>
-
-          <div
-            style={{
-              height: "58px",
-              borderRadius: "16px",
-              background: "#ffffff",
-              border: "1px solid #dbeafe",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 16px",
-              boxShadow:
-                "0 4px 12px rgba(37,99,235,0.08)",
-            }}
-          >
-
-            <div
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "10px",
-                background: "#eff6ff",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-
-              <User
-                size={20}
-                color="#2563eb"
+        {/* FORM FIELDS */}
+        <div className="space-y-5">
+          {/* USER FIELD */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider pl-1">
+              Usuario
+            </label>
+            <div className="flex items-center bg-white border border-slate-200/80 rounded-2xl p-1 px-3 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100 transition-all duration-200">
+              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-400">
+                <User size={18} />
+              </div>
+              <input
+                type="text"
+                placeholder="Ej. admin"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                className="flex-1 ml-3 border-none outline-none text-base text-slate-700 bg-transparent placeholder-slate-400 font-medium"
               />
-
             </div>
-
-            <input
-              type="text"
-              placeholder="Ingrese usuario"
-              value={usuario}
-              onChange={(e) =>
-                setUsuario(
-                  e.target.value
-                )
-              }
-              style={{
-                flex: 1,
-                marginLeft: "14px",
-                border: "none",
-                outline: "none",
-                fontSize: "17px",
-                color: "#475569",
-                background: "transparent",
-              }}
-            />
-
           </div>
 
-        </div>
-
-        {/* PASSWORD */}
-
-        <div style={{ marginBottom: "22px" }}>
-
-          <div
-            style={{
-              height: "58px",
-              borderRadius: "16px",
-              background: "#ffffff",
-              border: "1px solid #dbeafe",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 16px",
-              boxShadow:
-                "0 4px 12px rgba(37,99,235,0.08)",
-            }}
-          >
-
-            <div
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "10px",
-                background: "#eff6ff",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-
-              <Lock
-                size={20}
-                color="#2563eb"
+          {/* PASSWORD FIELD */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider pl-1">
+              Contraseña
+            </label>
+            <div className="flex items-center bg-white border border-slate-200/80 rounded-2xl p-1 px-3 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100 transition-all duration-200">
+              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-400">
+                <Lock size={18} />
+              </div>
+              <input
+                type={mostrarClave ? "text" : "password"}
+                placeholder="••••••••"
+                value={clave}
+                onChange={(e) => setClave(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleLogin()
+                  }
+                }}
+                className="flex-1 ml-3 border-none outline-none text-base text-slate-700 bg-transparent placeholder-slate-400 font-medium tracking-wide"
               />
-
+              <button
+                type="button"
+                onClick={() => setMostrarClave(!mostrarClave)}
+                className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                {mostrarClave ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-
-            <input
-              type={
-                mostrarClave
-                  ? "text"
-                  : "password"
-              }
-              placeholder="Ingrese contraseña"
-              value={clave}
-              onChange={(e) =>
-                setClave(
-                  e.target.value
-                )
-              }
-              onKeyDown={(e) => {
-
-                if (e.key === "Enter") {
-                  handleLogin()
-                }
-
-              }}
-              style={{
-                flex: 1,
-                marginLeft: "14px",
-                border: "none",
-                outline: "none",
-                fontSize: "17px",
-                color: "#475569",
-                background: "transparent",
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={() =>
-                setMostrarClave(
-                  !mostrarClave
-                )
-              }
-              style={{
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-              }}
-            >
-
-              {mostrarClave ? (
-
-                <EyeOff
-                  size={22}
-                  color="#64748b"
-                />
-
-              ) : (
-
-                <Eye
-                  size={22}
-                  color="#64748b"
-                />
-
-              )}
-
-            </button>
-
           </div>
 
+          {/* SUBMIT BUTTON */}
+          <button
+            onClick={handleLogin}
+            className="w-full mt-6 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-base cursor-pointer"
+          >
+            <LogIn size={18} />
+            Ingresar al Panel
+          </button>
         </div>
 
-        {/* BOTON */}
-
-        <button
-          onClick={handleLogin}
-          style={{
-            width: "100%",
-            height: "58px",
-            border: "none",
-            borderRadius: "18px",
-            background:
-              "linear-gradient(135deg,#2563eb,#1d4ed8)",
-            color: "#ffffff",
-            fontSize: "23px",
-            fontWeight: "bold",
-            cursor: "pointer",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "10px",
-            boxShadow:
-              "0 12px 24px rgba(37,99,235,0.25)",
-          }}
-        >
-
-          <LogIn size={24} />
-
-          Ingresar
-
-        </button>
-
-        {/* FOOTER */}
-
-        <div
-          style={{
-            marginTop: "26px",
-            textAlign: "center",
-          }}
-        >
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "14px",
-              marginBottom: "8px",
-            }}
-          >
-
-            <div
-              style={{
-                width: "90px",
-                height: "2px",
-                background: "#dbeafe",
-              }}
-            />
-
-            <ShieldCheck
-              size={26}
-              color="#2563eb"
-            />
-
-            <div
-              style={{
-                width: "90px",
-                height: "2px",
-                background: "#dbeafe",
-              }}
-            />
-
+        {/* CARD FOOTER */}
+        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center">
+          <div className="flex items-center gap-2 text-slate-400 mb-1">
+            <ShieldCheck size={18} className="text-emerald-500" />
+            <span className="text-xs font-semibold text-slate-600 tracking-wide">
+              Acceso Protegido
+            </span>
           </div>
-
-          <p
-            style={{
-              margin: 0,
-              color: "#64748b",
-              fontSize: "13px",
-            }}
-          >
-            Acceso seguro y confiable
+          <p className="text-[11px] text-slate-400 text-center">
+            Este portal cuenta con seguridad activa SSL.
           </p>
-
         </div>
 
       </div>
-
     </div>
   )
 }

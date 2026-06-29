@@ -23,6 +23,7 @@ interface Props {
 interface LineaAviso {
   tipo: string
   concepto: string
+  descripcion?: string
   monto: number
 }
 
@@ -81,30 +82,49 @@ export function AvisosCobroContent({ apartamentos }: Props) {
 
       // Conexión máster con torre_cartera_db
       if (aptoActual) {
-  const cargarDeuda = async () => {
-    const { data, error } = await supabase
+  const cargarDatos = async () => {
+
+    // DEUDA
+    const { data: carteraData } = await supabase
       .from("cartera")
       .select("deuda")
       .eq("unidad", aptoActual.unidad)
       .single()
 
-    if (error) {
-      console.error(error)
-      setSaldoMoraCalculado(0)
+    setSaldoMoraCalculado(carteraData?.deuda || 0)
+
+    // MULTAS ASIGNADAS
+    const { data: multasData, error: multasError } = await supabase
+      .from("multas_asignadas")
+      .select("*")
+      .eq("unidad", aptoActual.unidad)
+
+    if (multasError) {
+      console.error(multasError)
       return
     }
 
-    setSaldoMoraCalculado(data?.deuda || 0)
+    const multasConvertidas =
+  (multasData || []).map((m: any) => ({
+    tipo: "Multa",
+    concepto: m.tipo_multa,
+    descripcion: m.descripcion,
+    monto: Number(
+      String(m.valor).replace(/[^0-9]/g, "")
+    ) || 0
+  }))
+
+    setCargosAdicionales(multasConvertidas)
   }
 
-  cargarDeuda()
+  cargarDatos()
 }
 
     } else {
       setCuotaBase(null)
       setSaldoMoraCalculado(0)
     }
-    setCargosAdicionales([])
+    
   }, [idAptoSeleccionado, mesAviso, anioAviso, apartamentos])
   // SUMA REAL COMPLETA: Incluye la Mora de Cartera dentro del gran total
   const totalSumaNumerica =
@@ -230,10 +250,41 @@ async function uploadAvisoImage(blob: Blob) {
 
   const handleGuardarYEnviarFactura = async () => {
     if (!aptoActual) {
-      alert("Selecciona un apartamento antes de guardar.")
+      toast.warning("Selecciona un apartamento antes de guardar.")
       return
     }
 
+const { data: multasPendientes } = await supabase
+  .from("multas_asignadas")
+  .select("*")
+  .eq("unidad", aptoActual.unidad)
+  .eq("estado", "Pendiente")
+for (const multa of multasPendientes || []) {
+
+  if (!multa.fecha_asignacion) {
+
+    const hoy = new Date()
+
+    const vencimiento = new Date()
+
+    vencimiento.setDate(
+      vencimiento.getDate() + 15
+    )
+
+    await supabase
+      .from("multas_asignadas")
+      .update({
+        fecha_asignacion:
+          hoy.toISOString().split("T")[0],
+
+        fecha_vencimiento:
+          vencimiento
+            .toISOString()
+            .split("T")[0]
+      })
+      .eq("id", multa.id)
+  }
+}
     const periodoTexto =
       mesAviso === "Todo el año"
         ? `Año ${anioAviso}`
@@ -303,13 +354,28 @@ const { data, error } = await supabase
 console.log("DATA:", data)
 console.log("ERROR:", error)
 
+const hoyDate = new Date()
+hoyDate.setDate(hoyDate.getDate() + 10)
+const fechaLimiteString = hoyDate.toISOString().split("T")[0]
+
+await supabase
+  .from("mensualidades")
+  .insert([{
+    unidad: aptoActual.unidad,
+    mes: mesAviso,
+    anio: anioAviso,
+    valor: cuotaBase ? cuotaBase.monto : 20000,
+    estado: "Pendiente",
+    fecha_limite: fechaLimiteString
+  }])
+
     const plantillaElementId = "plantilla-to-export"
 
     const plantillaEl =
       document.getElementById(plantillaElementId)
 
     if (!plantillaEl) {
-      alert("No se encontró la plantilla para exportar.")
+      toast.error("No se encontró la plantilla para exportar.")
       return
     }
 
@@ -317,9 +383,9 @@ console.log("ERROR:", error)
       const phoneIntl = formatPhoneForWhatsApp(
         aptoActual.telefono
       )
-
+console.log("TELEFONO FINAL:", phoneIntl)
       if (!phoneIntl) {
-        alert("El apartamento no tiene un número válido.")
+        toast.error("El apartamento no tiene un número válido.")
         return
       }
 
@@ -334,30 +400,29 @@ const pngBlob =
 const imageUrl =
   await uploadAvisoImage(pngBlob)
 
-await fetch("/api/whatsapp", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    telefono: phoneIntl,
-    mensaje: mensajeTexto,
-    imageUrl,
-  }),
-})
+const respuestaWhatsapp = await fetch(
+  "/api/whatsapp",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      telefono: phoneIntl,
+      mensaje: mensajeTexto,
+      imageUrl,
+    }),
+  }
+)
 
-const copied =
-  await copyImageBlobToClipboard(pngBlob)
+const resultadoWhatsapp =
+  await respuestaWhatsapp.json()
+  console.log("URL IMAGEN:", imageUrl)
 
-      if (copied) {
-  setIdAptoSeleccionado("")
-  setCargosAdicionales([])
-  setCuotaBase(null)
-
-     toast.success("Aviso enviado por WhatsApp correctamente.")
-
-  return
-}
+console.log(
+  "WHATSAPP RESPONSE:",
+  JSON.stringify(data, null, 2)
+)
 
       const pdfBlob =
         await generatePdfBlobFromElement(
@@ -370,9 +435,9 @@ const copied =
       )
 
 
-      alert(
-        "Se descargó el PDF y se abrió WhatsApp."
-      )
+      toast.success(
+  "Se descargó el PDF y se abrió WhatsApp."
+)
 
       setIdAptoSeleccionado("")
       setCargosAdicionales([])
@@ -381,9 +446,9 @@ const copied =
     } catch (err) {
       console.error(err)
 
-      alert(
-        "Ocurrió un error al generar la plantilla."
-      )
+      toast.error(
+  "Ocurrió un error al generar la plantilla."
+)
     }
   }
 
@@ -524,8 +589,8 @@ const copied =
                         <span className="font-bold text-[#0f172a]">{linea.concepto}</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-0.5 ml-14">
-                        {linea.tipo === "Multa" ? "exceso" : "zona comun"}
-                      </p>
+  {linea.descripcion}
+</p>
                     </div>
                     <div className="flex items-center justify-end gap-5">
                       <span className="font-bold text-[#0f172a] text-sm">

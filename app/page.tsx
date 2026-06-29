@@ -104,9 +104,11 @@ cargarUnidades()
     )
   }
 
+  const isResumen = currentPage === "resumen";
+
   return (
 
-    <div className="min-h-screen bg-[#f4f5f7]">
+    <div className={`min-h-screen ${isResumen ? "bg-[#0B0F19] text-white" : "bg-[#f4f5f7]"}`}>
 
       <Sidebar
         currentPage={currentPage}
@@ -123,6 +125,10 @@ cargarUnidades()
             totalUnidades={unidades.length}
             totalMultas={1}
             totalProyectos={1}
+            apartamentos={unidades.map((u) => ({
+              unidad: u.unidad || "",
+              propietario: u.propietario || "",
+            }))}
           />
 
         )}

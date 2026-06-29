@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
 export function ConfiguracionContent() {
 
@@ -128,9 +129,7 @@ export function ConfiguracionContent() {
       logoUrl
     )
 
-    alert(
-      "Datos de la torre guardados correctamente"
-    )
+    toast.success("Datos de la torre guardados correctamente")
 
   }
 
@@ -143,9 +142,7 @@ export function ConfiguracionContent() {
       mensajeAviso
     )
 
-    alert(
-      "Mensaje guardado correctamente"
-    )
+    toast.success("Mensaje guardado correctamente")
 
   }
 
@@ -158,9 +155,7 @@ export function ConfiguracionContent() {
       rutaCarpeta
     )
 
-    alert(
-      "Ruta guardada correctamente"
-    )
+    toast.success("Ruta guardada correctamente")
 
   }
 
@@ -173,9 +168,7 @@ export function ConfiguracionContent() {
       String(loginActivo)
     )
 
-    alert(
-      "Configuración de acceso actualizada"
-    )
+    toast.success("Configuración de acceso actualizada")
 
   }
 
@@ -198,23 +191,13 @@ export function ConfiguracionContent() {
       claveActualLimpia !==
       claveGuardada.trim()
     ) {
-
-      alert(
-        "La contraseña actual no coincide"
-      )
-
+      toast.error("La contraseña actual no coincide")
       return
-
     }
 
     if (!nuevaClaveLimpia) {
-
-      alert(
-        "Ingrese una nueva contraseña"
-      )
-
+      toast.warning("Ingrese una nueva contraseña")
       return
-
     }
 
     localStorage.setItem(
@@ -225,9 +208,7 @@ export function ConfiguracionContent() {
     setClaveActual("")
     setNuevaClave("")
 
-    alert(
-      "Contraseña actualizada correctamente"
-    )
+    toast.success("Contraseña actualizada correctamente")
 
   }
 
@@ -238,7 +219,9 @@ export function ConfiguracionContent() {
     const claveGuardada = localStorage.getItem("torre_admin_password") || "12345"
 
     if (claveAutorizacion.trim() !== claveGuardada.trim()) {
-      alert("❌ Contraseña de autorización incorrecta. No se puede restablecer el sistema.")
+      toast.error("Contraseña de autorización incorrecta", {
+        description: "No se puede restablecer el sistema."
+      })
       return
     }
 
@@ -275,13 +258,17 @@ export function ConfiguracionContent() {
     // Dejamos una orden global de sistema limpio
     localStorage.setItem("sistema_master_limpio", "true")
 
-    alert("🔄 ¡Formateo Exitoso! Las unidades, multas, proyectos y cobros de prueba se han vaciado por completo de las pantallas. Tus códigos fuentes siguen 100% intactos.")
+    toast.success("¡Formateo Exitoso!", {
+      description: "Las unidades, multas, proyectos y cobros se han vaciado. Reiniciando panel..."
+    })
     
     setIsResetModalOpen(false)
     setClaveAutorizacion("")
     
     // Forzamos el reinicio inmediato del navegador para pintar el panel en blanco
-    window.location.reload()
+    setTimeout(() => {
+      window.location.reload()
+    }, 1500)
   }
 
 
