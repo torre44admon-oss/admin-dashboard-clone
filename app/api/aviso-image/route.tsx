@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
                 }}
               >
                 {/* Left side: Logo & Title */}
-                <div style={{ display: "flex", gap: "22px" }}>
+                <div style={{ display: "flex", gap: "22px", flex: 1, minWidth: 0, marginRight: "20px" }}>
                   {logoUrl ? (
                     <img
                       src={logoUrl}
@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
                       style={{
                         borderRadius: "18px",
                         objectFit: "cover",
+                        flexShrink: 0,
                       }}
                     />
                   ) : (
@@ -98,19 +99,22 @@ export async function GET(request: NextRequest) {
                         justifyContent: "center",
                         fontSize: "30px",
                         fontWeight: "bold",
+                        flexShrink: 0,
                       }}
                     >
                       T44
                     </div>
                   )}
 
-                  <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                     <span
                       style={{
-                        fontSize: "42px",
+                        fontSize: nombreTorre.length > 20 ? "28px" : "42px",
                         fontWeight: "bold",
                         color: "#1e293b",
                         margin: 0,
+                        wordBreak: "break-word",
+                        lineHeight: 1.2,
                       }}
                     >
                       {nombreTorre}
@@ -139,6 +143,7 @@ export async function GET(request: NextRequest) {
                     display: "flex",
                     flexDirection: "column",
                     minWidth: "240px",
+                    flexShrink: 0,
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", marginBottom: "20px" }}>
