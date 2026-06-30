@@ -354,7 +354,11 @@ export function ConfiguracionContent() {
           hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
           envio_automatico_avisos: envioAutomaticoAvisos,
           dia_envio_avisos: parseInt(diaEnvioAvisos) || 1,
-          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi)
+          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi),
+          nombre_torre: nombreTorre,
+          logo_url: logoUrl,
+          direccion_torre: direccion,
+          monto_fijo: montoFijo
         }, { onConflict: "mes_vigencia,ano_vigencia" })
 
       if (dbError) throw dbError
@@ -488,8 +492,17 @@ export function ConfiguracionContent() {
   }
 
   // GUARDAR MENSAJE
-  const guardarMensajeAviso = () => {
+  const guardarMensajeAviso = async () => {
     localStorage.setItem("mensaje_aviso", mensajeAviso)
+    try {
+      await supabase
+        .from("configuracion_tasas_mora")
+        .update({ mensaje_aviso: mensajeAviso })
+        .order("id", { ascending: false })
+        .limit(1)
+    } catch (e) {
+      console.log("No se pudo sincronizar el mensaje en Supabase", e)
+    }
     toast.success("Mensaje guardado correctamente")
   }
 
