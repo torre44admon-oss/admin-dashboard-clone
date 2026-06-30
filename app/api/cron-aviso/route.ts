@@ -294,7 +294,7 @@ export async function GET(request: Request) {
           direccion
         })
 
-        let dynamicImageUrl = `${origin}/api/aviso-image?${queryParams.toString()}`
+        let dynamicImageUrl = `${origin}/api/aviso-image?${queryParams.toString()}&t=${Date.now()}`
 
         // Si se ejecuta en localhost, usar una imagen de marcador de posición pública directa (.png) para que Meta pueda descargarla y el mensaje se entregue
         if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
