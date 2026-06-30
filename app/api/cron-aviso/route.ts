@@ -79,10 +79,10 @@ export async function GET(request: Request) {
     }
 
     // 3. Obtener configuración general para el aviso (nombre de la torre, logo, etc.)
-    const nombreTorre = config.nombre_torre || "Torre 44"
+    const nombreTorre = config.nombre_torre || "Alto de Santa Elena"
     const logoUrl = config.logo_url || ""
     const direccion = config.direccion_torre || ""
-    const montoFijoBase = parseFloat(config.monto_fijo || "0")
+    const montoFijoBase = parseFloat(config.monto_fijo || "20000")
     
     // Obtener todas las tasas históricas para liquidar mora
     const { data: tasasHistoricas } = await supabase.from("configuracion_tasas_mora").select("*")
@@ -96,13 +96,16 @@ export async function GET(request: Request) {
       })
     }
 
-    // Mes y año actual del ciclo de cobro
+    // Mes y año actual del ciclo de cobro (el próximo mes si se envía a fin de mes)
     const mesesNombres = [
       "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
       "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ]
-    const mesVigente = mesesNombres[hoyColombia.getMonth()]
-    const anoVigente = hoyColombia.getFullYear()
+    const fechaCiclo = hoyColombia.getDate() > 20
+      ? new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1)
+      : hoyColombia
+    const mesVigente = mesesNombres[fechaCiclo.getMonth()]
+    const anoVigente = fechaCiclo.getFullYear()
     const periodoTexto = `${mesVigente} de ${anoVigente}`
 
     // 4. Procesar y enviar cada unidad
@@ -279,7 +282,7 @@ export async function GET(request: Request) {
         }
 
         // Configuración de texto pie
-        const mensajeAviso = config.mensaje_aviso || "Por favor realizar el pago a tiempo."
+        const mensajeAviso = config.mensaje_aviso || "El pago de la administración debe realizarse a mas tardar el día 5 de cada mes. Los pagos realizados después del día 10 de cada mes generaran mora. cuenta de pago: NEQUIS 3152127700 a nombre de JHANETH SOLARTE por favor indicar el numero de apartamento."
 
         // Generar la URL dinámica de la imagen para este apartamento
         const queryParams = new URLSearchParams({
