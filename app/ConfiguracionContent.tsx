@@ -240,6 +240,26 @@ export function ConfiguracionContent() {
             setPeriodoAvi(parsed.p)
             localStorage.setItem("hora_envio_avisos", String(registro.hora_envio_avisos))
           }
+          if (registro.nombre_torre) {
+            setNombreTorre(registro.nombre_torre)
+            localStorage.setItem("nombre_torre", registro.nombre_torre)
+          }
+          if (registro.monto_fijo) {
+            setMontoFijo(registro.monto_fijo)
+            localStorage.setItem("monto_fijo", registro.monto_fijo)
+          }
+          if (registro.logo_url) {
+            setLogoUrl(registro.logo_url)
+            localStorage.setItem("logo_url", registro.logo_url)
+          }
+          if (registro.direccion_torre) {
+            setDireccion(registro.direccion_torre)
+            localStorage.setItem("direccion_torre", registro.direccion_torre)
+          }
+          if (registro.mensaje_aviso) {
+            setMensajeAviso(registro.mensaje_aviso)
+            localStorage.setItem("mensaje_aviso", registro.mensaje_aviso)
+          }
         }
       } catch (err) {
         console.log("No se pudo cargar configuracion_tasas_mora de Supabase (posiblemente la tabla no existe). Usando caché local...", err)
@@ -287,9 +307,13 @@ export function ConfiguracionContent() {
           telefono_reportes: telefonoReportes,
           dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
           hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
-          envio_automatico_avisos: envioAutomaticoAvisos,
           dia_envio_avisos: parseInt(diaEnvioAvisos) || 1,
-          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi)
+          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi),
+          nombre_torre: nombreTorre,
+          logo_url: logoUrl,
+          direccion_torre: direccion,
+          monto_fijo: montoFijo,
+          mensaje_aviso: mensajeAviso
         }, { onConflict: "mes_vigencia,ano_vigencia" })
 
       if (dbError) throw dbError
@@ -352,9 +376,13 @@ export function ConfiguracionContent() {
           telefono_reportes: telefonoReportes,
           dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
           hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
-          envio_automatico_avisos: envioAutomaticoAvisos,
           dia_envio_avisos: parseInt(diaEnvioAvisos) || 1,
-          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi)
+          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi),
+          nombre_torre: nombreTorre,
+          logo_url: logoUrl,
+          direccion_torre: direccion,
+          monto_fijo: montoFijo,
+          mensaje_aviso: mensajeAviso
         }, { onConflict: "mes_vigencia,ano_vigencia" })
 
       if (dbError) throw dbError
@@ -488,8 +516,39 @@ export function ConfiguracionContent() {
   }
 
   // GUARDAR MENSAJE
-  const guardarMensajeAviso = () => {
+  const guardarMensajeAviso = async () => {
     localStorage.setItem("mensaje_aviso", mensajeAviso)
+    try {
+      const meses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ]
+      const hoy = new Date()
+      const mesVigente = meses[hoy.getMonth()]
+      const anoVigente = hoy.getFullYear()
+      const parsedIbc = parseFloat(String(ibcAnual).replace(",", ".")) || 0
+      const parsedMult = parseFloat(String(multiplicadorMora).replace(",", ".")) || 0
+      await supabase.from("configuracion_tasas_mora").upsert({
+        mes_vigencia: mesVigente,
+        ano_vigencia: anoVigente,
+        ibc_banco_anual: parsedIbc,
+        multiplicador_ley: parsedMult,
+        dia_limite_pago: parseInt(diaPagoCuota) || 5,
+        dias_gracia_multas: parseInt(diasVencimientoMulta) || 15,
+        dias_gracia_proyectos: parseInt(diasVencimientoProyecto) || 60,
+        telefono_reportes: telefonoReportes,
+        dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
+        hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
+        envio_automatico_avisos: envioAutomaticoAvisos,
+        dia_envio_avisos: parseInt(diaEnvioAvisos) || 1,
+        hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi),
+        nombre_torre: nombreTorre,
+        logo_url: logoUrl,
+        direccion_torre: direccion,
+        monto_fijo: montoFijo,
+        mensaje_aviso: mensajeAviso
+      }, { onConflict: "mes_vigencia,ano_vigencia" })
+    } catch (e) {}
     toast.success("Mensaje guardado correctamente")
   }
 
