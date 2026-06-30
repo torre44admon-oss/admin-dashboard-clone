@@ -356,4 +356,4 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     return new Response(`Error rendering image: ${error.message}`, { status: 500 })
   }
-}}
+}
