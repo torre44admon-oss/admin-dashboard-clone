@@ -78,11 +78,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, message: "No hay unidades para procesar." })
     }
 
-    // 3. Obtener configuración general para el aviso (nombre de la torre, logo, etc.)
-    const nombreTorre = "TORRE 44"
-    const logoUrl = ""
-    const direccion = ""
-    const montoFijoBase = 20000
+    // 3. Obtener configuración general para el aviso (nombre de la torre, logo, etc.) desde Supabase
+    const nombreTorre = config.nombre_torre || "Torre 44"
+    const logoUrl = config.logo_url || ""
+    const direccion = config.direccion_torre || ""
+    const montoFijoBase = parseFloat(config.monto_fijo || "20000")
     
     // Obtener todas las tasas históricas para liquidar mora
     const { data: tasasHistoricas } = await supabase.from("configuracion_tasas_mora").select("*")
@@ -281,8 +281,8 @@ export async function GET(request: Request) {
           cargos.push({ concepto: "Cartera Anterior Pendiente", monto: deudaCartera })
         }
 
-        // Configuración de texto pie
-        const mensajeAviso = "El pago de la administración debe realizarse a mas tardar el día 5 de cada mes. Los pagos realizados después del día 10 de cada mes generaran mora. cuenta de pago: NEQUIS 3152127700 a nombre de JHANETH SOLARTE por favor indicar el numero de apartamento."
+        // Configuración de texto pie desde Supabase
+        const mensajeAviso = config.mensaje_aviso || "El pago de la administración debe realizarse a mas tardar el día 5 de cada mes. Los pagos realizados después del día 10 de cada mes generaran mora. cuenta de pago: NEQUIS 3152127700 a nombre de JHANETH SOLARTE por favor indicar el numero de apartamento."
 
         // Generar la URL dinámica de la imagen para este apartamento
         const queryParams = new URLSearchParams({
