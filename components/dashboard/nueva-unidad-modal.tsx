@@ -73,86 +73,35 @@ export function NuevaUnidadModal({
   onClose()
 }
   return (
-
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
       {/* OVERLAY */}
-
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/60"
         onClick={onClose}
       />
 
       {/* MODAL */}
-
-      <div
-        className="
-          relative
-          bg-white
-          rounded-xl
-          shadow-xl
-          w-full
-          max-w-md
-          mx-4
-          p-6
-        "
-      >
-
+      <div className="relative bg-[#131926] border border-[#1E293B]/60 rounded-2xl shadow-2xl w-full max-w-md p-6 text-white">
         {/* BOTON CERRAR */}
-
         <button
           onClick={onClose}
-          className="
-            absolute
-            top-4
-            right-4
-            p-1
-            hover:bg-gray-100
-            rounded
-            transition-colors
-          "
+          className="absolute top-4 right-4 p-1.5 hover:bg-white/5 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer"
         >
-
-          <X className="w-5 h-5 text-gray-500" />
-
+          <X className="w-5 h-5" />
         </button>
 
         {/* TITULO */}
-
-        <h2
-          className="
-            text-xl
-            font-semibold
-            text-gray-900
-            mb-6
-          "
-        >
+        <h2 className="text-xl font-bold text-white mb-6">
           Registrar Nueva Unidad
         </h2>
 
         {/* FORMULARIO */}
-
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4"
-        >
-
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* APARTAMENTO */}
-
           <div>
-
-            <label
-              className="
-                block
-                text-sm
-                font-medium
-                text-gray-700
-                mb-1.5
-              "
-            >
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
               Número / Apartamento
             </label>
-
             <input
               type="text"
               placeholder="Ej: 4A"
@@ -164,41 +113,18 @@ export function NuevaUnidadModal({
                 })
               }
               required
-              className="
-                w-full
-                px-4
-                py-2.5
-                border
-                border-gray-300
-                rounded-lg
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-blue-500
-                focus:border-transparent
-              "
+              className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
             />
-
           </div>
 
           {/* PISO */}
-
           <div>
-
-            <label
-              className="
-                block
-                text-sm
-                font-medium
-                text-gray-700
-                mb-1.5
-              "
-            >
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
               Piso (opcional)
             </label>
-
             <input
               type="text"
+              placeholder="Ej: 1"
               value={formData.piso}
               onChange={(e) =>
                 setFormData({
@@ -206,39 +132,15 @@ export function NuevaUnidadModal({
                   piso: e.target.value
                 })
               }
-              className="
-                w-full
-                px-4
-                py-2.5
-                border
-                border-gray-300
-                rounded-lg
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-blue-500
-                focus:border-transparent
-              "
+              className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
             />
-
           </div>
 
           {/* PROPIETARIO */}
-
           <div>
-
-            <label
-              className="
-                block
-                text-sm
-                font-medium
-                text-gray-700
-                mb-1.5
-              "
-            >
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
               Propietario / Residente
             </label>
-
             <input
               type="text"
               placeholder="Nombre completo"
@@ -250,39 +152,15 @@ export function NuevaUnidadModal({
                 })
               }
               required
-              className="
-                w-full
-                px-4
-                py-2.5
-                border
-                border-gray-300
-                rounded-lg
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-blue-500
-                focus:border-transparent
-              "
+              className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
             />
-
           </div>
 
           {/* TELEFONO */}
-
           <div>
-
-            <label
-              className="
-                block
-                text-sm
-                font-medium
-                text-gray-700
-                mb-1.5
-              "
-            >
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
               Teléfono
             </label>
-
             <input
               type="tel"
               placeholder="Ej: 3014130109"
@@ -294,39 +172,15 @@ export function NuevaUnidadModal({
                 })
               }
               required
-              className="
-                w-full
-                px-4
-                py-2.5
-                border
-                border-gray-300
-                rounded-lg
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-blue-500
-                focus:border-transparent
-              "
+              className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
             />
-
           </div>
 
           {/* EMAIL OPCIONAL */}
-
           <div>
-
-            <label
-              className="
-                block
-                text-sm
-                font-medium
-                text-gray-700
-                mb-1.5
-              "
-            >
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
               Correo electrónico (opcional)
             </label>
-
             <input
               type="email"
               placeholder="correo@ejemplo.com"
@@ -337,47 +191,19 @@ export function NuevaUnidadModal({
                   email: e.target.value
                 })
               }
-              className="
-                w-full
-                px-4
-                py-2.5
-                border
-                border-gray-300
-                rounded-lg
-                text-sm
-                focus:outline-none
-                focus:ring-2
-                focus:ring-blue-500
-                focus:border-transparent
-              "
+              className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
             />
-
           </div>
 
           {/* BOTON */}
-
           <button
             type="submit"
-            className="
-              w-full
-              bg-[#06122B]
-              text-white
-              py-3
-              rounded-lg
-              font-medium
-              text-sm
-              hover:bg-[#0a1c3d]
-              transition-colors
-              mt-2
-            "
+            className="w-full bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] mt-4 cursor-pointer"
           >
-            Guardar
+            Guardar Unidad
           </button>
-
         </form>
-
       </div>
-
     </div>
   )
 }

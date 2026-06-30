@@ -106,6 +106,7 @@ const asignarProyecto = async () => {
     }
 
     toast.success("Proyecto asignado a todos")
+    window.dispatchEvent(new Event("datosActualizados"))
     onClose()
     return
   }
@@ -150,6 +151,7 @@ const asignarProyecto = async () => {
   }
 
   toast.success("Proyecto asignado correctamente")
+  window.dispatchEvent(new Event("datosActualizados"))
   onClose()
 }
   useEffect(() => {

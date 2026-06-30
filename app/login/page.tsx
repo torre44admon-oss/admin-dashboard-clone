@@ -24,7 +24,23 @@ export default function LoginPage() {
   const [mostrarClave, setMostrarClave] =
     useState(false)
 
+  const [logoUrl, setLogoUrl] = useState("")
+  const [nombreTorre, setNombreTorre] = useState("Torre Admin")
+
   useEffect(() => {
+    const logoGuardado = localStorage.getItem("logo_url")
+    const nombreGuardado = localStorage.getItem("nombre_torre")
+    if (logoGuardado) setLogoUrl(logoGuardado)
+    if (nombreGuardado) setNombreTorre(nombreGuardado)
+
+    // RESTABLECER CREDENCIALES SI SE PASA ?reset=true EN LA URL
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get("reset") === "true") {
+      localStorage.setItem("torre_admin_usuario", "admin")
+      localStorage.setItem("torre_admin_password", "12345")
+      toast.success("Credenciales restablecidas a: admin / 12345")
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
 
     // CREAR USUARIO SOLO SI NO EXISTE
 
@@ -169,100 +185,159 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full relative flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/50 overflow-hidden font-sans">
-      {/* BACKGROUND ELEMENTS */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] max-w-[600px] rounded-full bg-blue-400/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] max-w-[600px] rounded-full bg-indigo-400/10 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen w-full relative flex items-center justify-center p-4 bg-[#030513] overflow-hidden font-poppins">
+      
+      {/* GOOGLE FONTS POPPINS IMPORT */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
+        .font-poppins {
+          font-family: 'Poppins', sans-serif;
+        }
+      `}</style>
 
-      {/* LOGIN CARD */}
-      <div className="relative w-full max-w-[440px] bg-white/70 backdrop-blur-xl border border-white/80 rounded-3xl p-8 md:p-10 shadow-[0_20px_50px_rgba(37,99,235,0.08)] z-10 animate-[fadeIn_0.5s_ease-out]">
+      {/* BACKGROUND FLOATING DECORATIONS (GEOMETRIC NEON SHAPES & GLOWS) */}
+      
+      {/* Glow behind center */}
+      <div className="absolute w-[800px] h-[500px] bg-[#1A82FF]/10 blur-[130px] rounded-full pointer-events-none z-0" />
+
+      {/* Top-Right Neon Circular Ring */}
+      <div className="absolute top-[8%] right-[15%] w-[180px] h-[180px] rounded-full border-4 border-[#1A82FF]/60 opacity-60 blur-[1px] pointer-events-none animate-[pulse_6s_ease-in-out_infinite]" />
+
+      {/* Bottom-Left Concentric Circles */}
+      <div className="absolute bottom-[-60px] left-[-60px] w-72 h-72 opacity-25 pointer-events-none rotate-45 select-none">
+        <div className="w-full h-full rounded-full border border-sky-400 flex items-center justify-center p-6">
+          <div className="w-full h-full rounded-full border border-sky-400 flex items-center justify-center p-6">
+            <div className="w-full h-full rounded-full border border-sky-400 flex items-center justify-center p-6">
+              <div className="w-full h-full rounded-full border border-sky-400 bg-sky-400/5" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top-Left Blurred Cyan Triangle */}
+      <div className="absolute top-[12%] left-[18%] w-24 h-24 opacity-30 blur-[2px] rotate-[15deg] pointer-events-none select-none">
+        <svg className="w-full h-full text-sky-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="5">
+          <polygon points="50,15 90,85 10,85" />
+        </svg>
+      </div>
+
+      {/* Center-Left Orange Triangle */}
+      <div className="absolute top-[34%] left-[6%] w-8 h-8 opacity-65 rotate-[-25deg] pointer-events-none select-none">
+        <svg className="w-full h-full text-orange-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8">
+          <polygon points="50,15 90,85 10,85" />
+        </svg>
+      </div>
+
+      {/* Center-Top Cyan Square (Diamond) */}
+      <div className="absolute top-[22%] left-[45%] w-7 h-7 opacity-40 rotate-[45deg] pointer-events-none select-none">
+        <div className="w-full h-full border-2 border-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.3)]" />
+      </div>
+
+      {/* Bottom-Center Downward Triangle */}
+      <div className="absolute bottom-[22%] left-[53%] w-8 h-8 opacity-50 rotate-[180deg] pointer-events-none select-none">
+        <svg className="w-full h-full text-sky-400" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="8">
+          <polygon points="50,15 90,85 10,85" />
+        </svg>
+      </div>
+
+      {/* MAIN CONTAINER CARD */}
+      <div className="relative w-[1000px] h-[540px] bg-[#070A21] rounded-[20px] overflow-hidden flex flex-row shadow-[0_30px_100px_rgba(0,0,0,0.8)] z-10 animate-[fadeIn_0.5s_ease-out] border border-white/5 shrink-0">
         
-        {/* LOGO CONTAINER */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 mb-4 group transition-transform duration-300 hover:scale-105">
-            <Building2 size={32} className="text-white" />
-            <div className="absolute -inset-2 bg-blue-500/10 rounded-[20px] -z-10 animate-pulse" />
+        {/* CARD BACKGROUND FLUID WAVES */}
+        <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-40" viewBox="0 0 1000 540" preserveAspectRatio="none">
+          <path d="M 0,380 C 250,300 500,480 750,360 T 1000,400 L 1000,540 L 0,540 Z" fill="#0A183C" />
+          <path d="M 0,420 C 300,320 600,520 800,390 T 1000,430 L 1000,540 L 0,540 Z" fill="#0E2356" opacity="0.6" />
+        </svg>
+
+        {/* LEFT SIDE: FORM ELEVATED BOX CARD */}
+        <div className="w-[45%] h-full flex items-center justify-center p-8 z-10">
+          
+          <div className="bg-[#090C28]/95 backdrop-blur-md rounded-[16px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 p-8 flex flex-col justify-between h-[420px] w-[340px]">
+            
+            {/* AVATAR CENTER (DYNAMIC USER LOGO) */}
+            <div className="flex flex-col items-center mt-1">
+              <div className="w-[84px] h-[84px] rounded-full border-2 border-sky-400/80 flex items-center justify-center bg-transparent p-[2px] transition-transform duration-300 hover:scale-105">
+                <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-[#070A21]">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={30} className="text-sky-400/95" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* WELCOME TITLE */}
+            <div className="text-center">
+              <h3 className="text-xl font-medium text-white tracking-wide">
+                ¡Bienvenido!
+              </h3>
+            </div>
+
+            {/* FORM INPUTS */}
+            <div className="space-y-4 my-auto">
+              {/* Username Input */}
+              <div className="relative flex items-center h-[44px] bg-[#131738] rounded-[8px] px-4 border border-transparent focus-within:border-sky-500/40 transition-all duration-300">
+                <User size={16} className="text-slate-400 mr-3 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Usuario o Correo"
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
+                  className="flex-1 bg-transparent border-none outline-none text-xs text-white placeholder-slate-500 tracking-wide font-sans"
+                />
+              </div>
+
+              {/* Password Input */}
+              <div className="relative flex items-center h-[44px] bg-[#131738] rounded-[8px] px-4 border border-transparent focus-within:border-sky-500/40 transition-all duration-300">
+                <Lock size={16} className="text-slate-400 mr-3 shrink-0" />
+                <input
+                  type={mostrarClave ? "text" : "password"}
+                  placeholder="Contraseña"
+                  value={clave}
+                  onChange={(e) => setClave(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleLogin()
+                    }
+                  }}
+                  className="flex-1 bg-transparent border-none outline-none text-xs text-white placeholder-slate-500 tracking-wide font-sans"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarClave(!mostrarClave)}
+                  className="text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                >
+                  {mostrarClave ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              {/* ACTION BUTTON (SIGN IN ONLY) */}
+              <div className="pt-2">
+                <button
+                  onClick={handleLogin}
+                  className="w-full h-[40px] bg-[#1A82FF] hover:bg-[#3393FF] text-white font-bold rounded-[8px] text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_4px_15px_rgba(26,130,255,0.3)] cursor-pointer"
+                >
+                  INICIAR SESIÓN
+                </button>
+              </div>
+            </div>
+
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-            Torre Admin
+
+        </div>
+
+        {/* RIGHT SIDE: LOGO TEXT & BRANDING */}
+        <div className="w-[55%] h-full flex flex-col items-center justify-center text-center p-12 z-10">
+          <h1 className="text-[52px] font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#00E5FF] to-[#1A82FF] leading-none mb-4 font-poppins uppercase">
+            ALTO DE SANTA ELENA
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Ingresa tus credenciales de acceso
-          </p>
-        </div>
-
-        {/* FORM FIELDS */}
-        <div className="space-y-5">
-          {/* USER FIELD */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider pl-1">
-              Usuario
-            </label>
-            <div className="flex items-center bg-white border border-slate-200/80 rounded-2xl p-1 px-3 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100 transition-all duration-200">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-400">
-                <User size={18} />
-              </div>
-              <input
-                type="text"
-                placeholder="Ej. admin"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                className="flex-1 ml-3 border-none outline-none text-base text-slate-700 bg-transparent placeholder-slate-400 font-medium"
-              />
-            </div>
-          </div>
-
-          {/* PASSWORD FIELD */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider pl-1">
-              Contraseña
-            </label>
-            <div className="flex items-center bg-white border border-slate-200/80 rounded-2xl p-1 px-3 shadow-sm focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100 transition-all duration-200">
-              <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 text-slate-400">
-                <Lock size={18} />
-              </div>
-              <input
-                type={mostrarClave ? "text" : "password"}
-                placeholder="••••••••"
-                value={clave}
-                onChange={(e) => setClave(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleLogin()
-                  }
-                }}
-                className="flex-1 ml-3 border-none outline-none text-base text-slate-700 bg-transparent placeholder-slate-400 font-medium tracking-wide"
-              />
-              <button
-                type="button"
-                onClick={() => setMostrarClave(!mostrarClave)}
-                className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-              >
-                {mostrarClave ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {/* SUBMIT BUTTON */}
-          <button
-            onClick={handleLogin}
-            className="w-full mt-6 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-base cursor-pointer"
-          >
-            <LogIn size={18} />
-            Ingresar al Panel
-          </button>
-        </div>
-
-        {/* CARD FOOTER */}
-        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center">
-          <div className="flex items-center gap-2 text-slate-400 mb-1">
-            <ShieldCheck size={18} className="text-emerald-500" />
-            <span className="text-xs font-semibold text-slate-600 tracking-wide">
-              Acceso Protegido
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 text-center">
-            Este portal cuenta con seguridad activa SSL.
+          
+          {/* Cyan/Blue Separator Bar */}
+          <div className="w-28 h-[3px] bg-[#1A82FF] rounded-full mb-6 shadow-[0_0_10px_rgba(26,130,255,0.5)]" />
+          
+          <p className="text-xs text-[#8E94C5] tracking-widest uppercase font-semibold">
+            Tu portal de administración
           </p>
         </div>
 
@@ -270,3 +345,5 @@ export default function LoginPage() {
     </div>
   )
 }
+
+

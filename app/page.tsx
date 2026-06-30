@@ -14,7 +14,7 @@ import {
 
 import { EditarUnidadModal } from "@/components/dashboard/editar-unidad-modal"
 
-import { Plus } from "lucide-react"
+import { Plus, Menu, Building2, CalendarCheck, Settings } from "lucide-react"
 
 // VISTAS
 import { AvisosCobroContent } from "./AvisosCobroContent"
@@ -32,10 +32,16 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] =
     useState<any>("avisos-cobro")
 
+  const [isSidebarOpen, setIsSidebarOpen] =
+    useState(false)
+
   const [isModalOpen, setIsModalOpen] =
     useState(false)
 
   const [isEditModalOpen, setIsEditModalOpen] =
+    useState(false)
+
+  const [adminMode, setAdminMode] =
     useState(false)
 
   const [unidades, setUnidades] =
@@ -43,6 +49,25 @@ export default function Dashboard() {
 
   const [mounted, setMounted] =
     useState(false)
+
+  const [nombreTorre, setNombreTorre] = useState("Torre Admin")
+  const [logoUrl, setLogoUrl] = useState("")
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const name = localStorage.getItem("nombre_torre") || "Torre Admin"
+      const logo = localStorage.getItem("logo_url") || ""
+      setNombreTorre(name)
+      setLogoUrl(logo)
+    }
+    handleStorageChange()
+    window.addEventListener("storage", handleStorageChange)
+    window.addEventListener("nombreTorreChanged", handleStorageChange)
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      window.removeEventListener("nombreTorreChanged", handleStorageChange)
+    }
+  }, [])
 
   // LOGIN
 
@@ -63,22 +88,25 @@ export default function Dashboard() {
     setMounted(true)
 
     const cargarUnidades = async () => {
+      const { data, error } = await supabase
+        .from("unidades")
+        .select("*")
 
-  const { data, error } =
-    await supabase
-      .from("unidades")
-      .select("*")
+      if (!error && data) {
+        setUnidades(data)
+      }
+    }
 
-  if (!error && data) {
+    cargarUnidades()
 
-    setUnidades(data)
+    const handleDatosActualizados = () => {
+      cargarUnidades()
+    }
+    window.addEventListener("datosActualizados", handleDatosActualizados)
 
-  }
-
-}
-
-cargarUnidades()
-
+    return () => {
+      window.removeEventListener("datosActualizados", handleDatosActualizados)
+    }
   }, [])
 
   // LOADING
@@ -104,18 +132,59 @@ cargarUnidades()
     )
   }
 
-  const isResumen = currentPage === "resumen";
+  const isDarkTheme = true;
+
+  const getFechaHoyFormateada = () => {
+    const dias = [
+      "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
+    ]
+    const meses = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+    const hoy = new Date()
+    const diaSemana = dias[hoy.getDay()].toLowerCase()
+    const diaMes = hoy.getDate()
+    const mes = meses[hoy.getMonth()].toLowerCase()
+    const anio = hoy.getFullYear()
+    return `${diaSemana}, ${diaMes} de ${mes} de ${anio}`
+  }
 
   return (
 
-    <div className={`min-h-screen ${isResumen ? "bg-[#0B0F19] text-white" : "bg-[#f4f5f7]"}`}>
+    <div className={`min-h-screen ${isDarkTheme ? "bg-[#0B0F19] text-white" : "bg-[#f4f5f7]"}`}>
+
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#06122B] text-white flex items-center justify-between px-4 z-30 border-b border-[#1E293B]/40">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <span className="font-semibold text-lg">{nombreTorre}</span>
+        </div>
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border border-white/20 overflow-hidden bg-slate-900/50">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+          ) : (
+            <Building2 className="w-5 h-5 text-white/80" />
+          )}
+        </div>
+      </header>
 
       <Sidebar
         currentPage={currentPage}
-        onNavigate={setCurrentPage}
+        onNavigate={(page) => {
+          setCurrentPage(page)
+          setIsSidebarOpen(false)
+        }}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
-      <main className="ml-[250px] p-8">
+      <main className="ml-0 lg:ml-[250px] p-4 md:p-8 pt-20 lg:pt-8">
 
         {/* RESUMEN */}
 
@@ -137,90 +206,61 @@ cargarUnidades()
 
         {currentPage === "unidades" && (
 
-          <div className="font-sans">
+          <div className="font-sans text-slate-200">
 
-            <div className="flex justify-between mb-8">
+            <div className="flex justify-between items-center mb-8 gap-4 flex-col md:flex-row animate-[fadeIn_0.4s_ease-out]">
 
               <div>
 
-                <h1
-                  className="
-                    text-[28px]
-                    font-bold
-                    text-[#06122B]
-                  "
-                >
+                <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
                   Unidades
                 </h1>
 
-                <p className="text-gray-500 text-sm">
+                <p className="text-slate-400 text-sm mt-1">
                   Gestión de apartamentos
                 </p>
 
               </div>
 
-              <button
-                onClick={() =>
-                  setIsModalOpen(true)
-                }
-                className="
-                  flex
-                  items-center
-                  gap-2
-                  bg-[#06122B]
-                  text-white
-                  px-5
-                  h-[42px]
-                  rounded-lg
-                  text-sm
-                  cursor-pointer
-                  shadow-sm
-                "
-              >
+              <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
+                <div className="bg-[#131926]/90 border border-[#1E293B]/50 px-4 py-2.5 rounded-xl flex items-center gap-2.5 text-xs text-slate-300 font-medium h-[42px]">
+                  <CalendarCheck className="w-4 h-4 text-emerald-400" />
+                  <span>{getFechaHoyFormateada()}</span>
+                </div>
 
-                <Plus className="w-4 h-4" />
+                <button
+                  onClick={() => setAdminMode(!adminMode)}
+                  className="bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white font-semibold px-4 h-[42px] rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-md transition-all active:scale-[0.98]"
+                >
+                  <Settings className="w-4 h-4" />
+                  {adminMode ? "Ver Modo Normal" : "Administrar Unidades"}
+                </button>
 
-                Nueva Unidad
-
-              </button>
-
-            </div>
-
-            <div
-              className="
-                bg-white
-                rounded-2xl
-                border
-                border-[#dfe5ec]
-                shadow-sm
-                overflow-hidden
-                p-1
-              "
-            >
-
-              <UnidadesTable
-
-                unidades={unidades}
-
-                onDelete={(idx) => {
-
-                  const n =
-                    unidades.filter(
-                      (_, i) => i !== idx
-                    )
-
-                  setUnidades(n)
-
-
-                }}
-
-                onEdit={() =>
-                  setIsEditModalOpen(true)
-                }
-
-              />
+                {adminMode && (
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 bg-[#06122B] text-white px-5 h-[42px] rounded-xl text-xs cursor-pointer shadow-sm border border-white/10 hover:bg-[#06122B]/80 transition-all active:scale-[0.98]"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Nueva Unidad
+                  </button>
+                )}
+              </div>
 
             </div>
+
+            <UnidadesTable
+              unidades={unidades}
+              adminMode={adminMode}
+              onDelete={(idx) => {
+                const n = unidades.filter((_, i) => i !== idx)
+                setUnidades(n)
+              }}
+              onEdit={(idx) => {
+                setIsEditModalOpen(true)
+              }}
+              onAdd={() => setIsModalOpen(true)}
+            />
 
           </div>
 

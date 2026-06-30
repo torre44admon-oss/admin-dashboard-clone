@@ -21,6 +21,8 @@ interface PlantillaProps {
   montoCuotaMantenimiento?: number
   cargosAdicionales?: LineaFactura[]
   mensajePiePagina?: string
+  direccionTorre?: string
+  mesesVencidos?: string[]
 }
 
 export function PlantillaPropietario({
@@ -36,6 +38,8 @@ export function PlantillaPropietario({
   montoCuotaMantenimiento = 20000,
   cargosAdicionales = [],
   mensajePiePagina = "Por favor realizar el pago a tiempo.",
+  direccionTorre = "",
+  mesesVencidos = [],
 }: PlantillaProps) {
 
   const totalSuma =
@@ -135,6 +139,18 @@ export function PlantillaPropietario({
                 >
                   {nombreTorre}
                 </h1>
+                {direccionTorre && (
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "#64748b",
+                      margin: "6px 0 0 2px",
+                      fontWeight: "normal",
+                    }}
+                  >
+                    {direccionTorre}
+                  </p>
+                )}
 
                 <p
                   style={{
@@ -289,6 +305,24 @@ export function PlantillaPropietario({
                 $ {(montoCuotaMantenimiento / 1000).toFixed(3)}
               </div>
             </div>
+
+            {mesesVencidos && mesesVencidos.length > 0 && (
+              <div
+                style={{
+                  marginTop: "14px",
+                  fontSize: "20px",
+                  color: "#b45309",
+                  background: "#fef3c7",
+                  border: "1px solid #fde68a",
+                  borderRadius: "14px",
+                  padding: "12px 20px",
+                  fontWeight: "bold",
+                  lineHeight: "1.4",
+                }}
+              >
+                Meses Vencidos: <span style={{ fontWeight: "normal", color: "#78350f" }}>{mesesVencidos.join(", ")}</span>
+              </div>
+            )}
           </div>
 
           {/* CARGOS */}

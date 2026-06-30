@@ -127,6 +127,7 @@ if (errorPortafolio) {
 }
 
 toast.success("Multa asignada correctamente")
+window.dispatchEvent(new Event("datosActualizados"))
 onClose()
 
 }

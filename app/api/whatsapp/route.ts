@@ -20,15 +20,26 @@ console.log("TELEFONO:", telefono);
           Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-  messaging_product: "whatsapp",
-  to: telefono,
-  type: "image",
-  image: {
-    link: imageUrl,
-    caption: mensaje,
-  },
-})
+        body: JSON.stringify(
+          imageUrl
+            ? {
+                messaging_product: "whatsapp",
+                to: telefono,
+                type: "image",
+                image: {
+                  link: imageUrl,
+                  caption: mensaje,
+                },
+              }
+            : {
+                messaging_product: "whatsapp",
+                to: telefono,
+                type: "text",
+                text: {
+                  body: mensaje,
+                },
+              }
+        )
       }
     );
 

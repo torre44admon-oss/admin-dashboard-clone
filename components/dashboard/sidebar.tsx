@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 import {
@@ -32,6 +32,8 @@ export type PageType =
 interface SidebarProps {
   currentPage: PageType
   onNavigate: (page: PageType) => void
+  isOpen?: boolean
+  onClose?: () => void
 }
 
 const mainMenuItems: {
@@ -91,10 +93,30 @@ const gestionSubItems: {
 
 export function Sidebar({
   currentPage,
-  onNavigate
+  onNavigate,
+  isOpen,
+  onClose
 }: SidebarProps) {
 
   const router = useRouter()
+  const [nombreTorre, setNombreTorre] = useState("Torre Admin")
+  const [logoUrl, setLogoUrl] = useState("")
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const name = localStorage.getItem("nombre_torre") || "Torre Admin"
+      const logo = localStorage.getItem("logo_url") || ""
+      setNombreTorre(name)
+      setLogoUrl(logo)
+    }
+    handleStorageChange()
+    window.addEventListener("storage", handleStorageChange)
+    window.addEventListener("nombreTorreChanged", handleStorageChange)
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      window.removeEventListener("nombreTorreChanged", handleStorageChange)
+    }
+  }, [])
 
   const [gestionOpen, setGestionOpen] =
     useState(
@@ -114,8 +136,20 @@ export function Sidebar({
   }
 
   return (
+    <>
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden animate-[fadeIn_0.2s_ease-out]"
+        />
+      )}
 
-    <aside className="fixed left-0 top-0 h-screen w-[250px] bg-[#06122B] flex flex-col">
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-screen w-[250px] bg-[#06122B] flex flex-col z-50 transition-transform duration-300 lg:translate-x-0",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
 
       {/* LOGO */}
 
@@ -123,14 +157,16 @@ export function Sidebar({
 
         <div className="flex items-center gap-3">
 
-          <div className="w-10 h-10 rounded-lg border-2 border-white/30 flex items-center justify-center">
-
-            <Building2 className="w-5 h-5 text-white/80" />
-
+          <div className="w-10 h-10 rounded-lg border-2 border-white/30 flex items-center justify-center overflow-hidden bg-slate-900/50">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Building2 className="w-5 h-5 text-white/80" />
+            )}
           </div>
 
           <span className="text-white font-semibold text-lg">
-            Torre Admin
+            {nombreTorre}
           </span>
 
         </div>
@@ -356,9 +392,10 @@ export function Sidebar({
 
         </button>
 
-      </div>
+    </div>
 
-    </aside>
+  </aside>
+  </>
 
-  )
+)
 }

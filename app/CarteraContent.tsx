@@ -212,7 +212,7 @@ cerrarModal();
     setTimeout(() => { window.print(); }, 150);
   };
   return (
-    <div className="font-sans max-w-5xl">
+    <div className="font-sans text-slate-200 animate-[fadeIn_0.4s_ease-out] w-full">
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -224,47 +224,68 @@ cerrarModal();
       <div className="flex justify-between items-center mb-6 print:hidden">
         <div className="flex items-center gap-3">
           {vistaActual === "portafolio" && (
-            <button onClick={() => setVistaActual("tabla")} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 cursor-pointer"><ArrowLeft className="w-5 h-5" /></button>
+            <button 
+              onClick={() => setVistaActual("tabla")} 
+              className="p-2 hover:bg-[#1E293B]/40 rounded-xl text-slate-400 hover:text-white cursor-pointer transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
           )}
           <div>
-            <h1 className="text-[28px] font-bold text-[#06122B] tracking-tight">{vistaActual === "tabla" ? "Cartera" : "Portafolio de Cartera"}</h1>
-            <p className="text-gray-500 text-sm mt-0.5">{vistaActual === "tabla" ? "Gestión de saldos pendientes" : "Historial por apartamento"}</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+              {vistaActual === "tabla" ? "Cartera" : "Portafolio de Cartera"}
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">
+              {vistaActual === "tabla" ? "Gestión de saldos pendientes" : "Historial por apartamento"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setVistaActual(vistaActual === "tabla" ? "portafolio" : "tabla")} className="bg-[#06122B] text-white px-5 h-[42px] rounded-lg text-sm font-medium cursor-pointer shadow-sm hover:opacity-95">
-            <span>{vistaActual === "tabla" ? "Portafolio" : "Ver Tabla"}</span>
+          <button 
+            onClick={() => setVistaActual(vistaActual === "tabla" ? "portafolio" : "tabla")} 
+            className="border border-[#1E293B]/80 bg-[#1B2336] hover:bg-[#1B2336]/80 text-slate-300 hover:text-white px-5 h-[42px] rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+          >
+            <span>{vistaActual === "tabla" ? "Ver Portafolio" : "Ver Tabla"}</span>
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="bg-[#06122B] text-white px-5 h-[42px] rounded-lg text-sm font-medium cursor-pointer shadow-sm hover:opacity-95">
+          <button 
+            onClick={() => setIsModalOpen(true)} 
+            className="bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white font-bold h-[42px] px-5 rounded-xl text-xs cursor-pointer shadow-md transition-all active:scale-[0.98]"
+          >
             <span>Registrar Movimiento</span>
           </button>
         </div>
       </div>
 
       {vistaActual === "tabla" ? (
-        <div className="bg-white rounded-2xl border border-[#dfe5ec] shadow-sm overflow-hidden p-1 print:hidden">
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-3xl shadow-2xl overflow-hidden p-1 print:hidden">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#f8fafc] border-b border-[#dfe5ec]">
-                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-[15%]">APTO</th>
-                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-[35%]">PROPIETARIO</th>
-                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-[25%] text-center">ESTADO ACTUAL</th>
-                <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-[25%] text-right pr-6">DEUDA TOTAL</th>
+              <tr className="bg-[#0B0F19]/40 border-b border-[#1E293B]/40 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <th className="p-4 pl-6 w-[15%]">APTO</th>
+                <th className="p-4 w-[35%]">PROPIETARIO</th>
+                <th className="p-4 text-center w-[25%]">ESTADO ACTUAL</th>
+                <th className="p-4 text-right pr-6 w-[25%]">DEUDA TOTAL</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#1E293B]/20">
               {apartamentos?.map((apto) => {
                 const deudaApto = deudas[apto.unidad] || 0;
                 return (
-                  <tr key={apto.unidad} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-4 text-sm font-bold text-[#1d4ed8]">Apto. {apto.unidad}</td>
-                    <td className="p-4 text-sm font-semibold text-black">{apto.propietario}</td>
+                  <tr key={apto.unidad} className="hover:bg-white/5 transition-colors">
+                    <td className="p-4 pl-6 text-sm font-bold text-white">Apto. {apto.unidad}</td>
+                    <td className="p-4 text-sm text-slate-300 capitalize">{apto.propietario}</td>
                     <td className="p-4 text-sm text-center">
-                      <span style={{ backgroundColor: deudaApto > 0 ? "#ef4444" : "#22c55e", color: "#ffffff" }} className="inline-flex items-center justify-center text-xs font-extrabold px-4 py-2 rounded-xl uppercase tracking-wider w-[130px] shadow-sm">
+                      <span className={`inline-flex items-center justify-center text-[10px] font-extrabold px-3.5 py-1 rounded-xl uppercase tracking-wider w-[120px] border ${
+                        deudaApto > 0 
+                          ? "bg-red-500/10 text-red-400 border-red-500/20" 
+                          : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      }`}>
                         {deudaApto > 0 ? "Con deuda" : "Al día"}
                       </span>
                     </td>
-                    <td className={`p-4 text-base font-bold text-right pr-6 ${deudaApto > 0 ? "text-red-600" : "text-emerald-600"}`}>$ {deudaApto.toLocaleString("es-CO")}</td>
+                    <td className={`p-4 text-base font-extrabold text-right pr-6 ${deudaApto > 0 ? "text-red-400" : "text-emerald-400"}`}>
+                      $ {deudaApto.toLocaleString("es-CO")}
+                    </td>
                   </tr>
                 );
               })}
@@ -277,18 +298,31 @@ cerrarModal();
             const isOpen = tarjetasAbiertas.includes(apto.unidad);
             const movs = historial.filter((m) => m.unidad === apto.unidad);
             return (
-              <div key={apto.unidad} className="bg-white rounded-2xl border border-[#dfe5ec] shadow-sm overflow-hidden p-5">
-                <div onClick={() => toggleTarjeta(apto.unidad)} className="flex justify-between items-center cursor-pointer select-none">
+              <div 
+                key={apto.unidad} 
+                className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-2xl shadow-xl overflow-hidden p-5"
+              >
+                <div 
+                  onClick={() => toggleTarjeta(apto.unidad)} 
+                  className="flex justify-between items-center cursor-pointer select-none"
+                >
                   <div>
-                    <h3 className="text-base font-bold text-[#06122B]">Apto. {apto.unidad}</h3>
-                    <p className="text-gray-500 text-xs mt-0.5">Propietario: <span className="text-gray-600 font-medium">{apto.propietario}</span></p>
+                    <h3 className="text-base font-bold text-white">Apto. {apto.unidad}</h3>
+                    <p className="text-slate-400 text-xs mt-1">
+                      Propietario: <span className="text-slate-200 capitalize font-medium">{apto.propietario}</span>
+                    </p>
                   </div>
-                  <div className="text-gray-500 p-1">{isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}</div>
+                  <div className="text-slate-400 p-1">
+                    {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
                 </div>
+
                 {isOpen && (
-                  <div className="mt-4 pt-4 border-t border-[#f1f5f9] space-y-3">
+                  <div className="mt-4 pt-4 border-t border-[#1E293B]/20 space-y-3">
                     {movs.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-gray-400 italic bg-[#f8fafc] rounded-xl">No hay registros de caja para esta unidad.</div>
+                      <div className="p-4 text-center text-xs text-slate-500 italic bg-[#1B2336]/40 rounded-xl">
+                        No hay registros de caja para esta unidad.
+                      </div>
                     ) : (
                       <>
                         <div className="space-y-3">
@@ -297,23 +331,41 @@ cerrarModal();
                             const montoSeguro = m.monto || 0;
                             const isChecked = seleccionados.includes(m.id);
                             return (
-                              <div key={m.id} className="flex justify-between items-center bg-white border border-gray-100 rounded-xl p-4 shadow-xs">
+                              <div 
+                                key={m.id} 
+                                className="flex justify-between items-center bg-[#0B0F19]/60 border border-[#1E293B]/30 rounded-xl p-4 shadow-xs"
+                              >
                                 <div className="flex items-center gap-4">
-                                  <input type="checkbox" checked={isChecked} onChange={() => handleCheckboxChange(m.id)} className="w-4 h-4 rounded border-gray-300 text-[#10b981] focus:ring-[#10b981] cursor-pointer" onClick={(e) => e.stopPropagation()} />
+                                  <input 
+                                    type="checkbox" 
+                                    checked={isChecked} 
+                                    onChange={() => handleCheckboxChange(m.id)} 
+                                    className="w-4 h-4 accent-indigo-500 rounded bg-[#1B2336] border-[#1E293B]/80 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                                    onClick={(e) => e.stopPropagation()} 
+                                  />
                                   <div className="space-y-1">
-                                    <span className="text-sm font-bold text-[#06122B] block">
-                                      {m.tipo === "deuda" ? `Deuda registrada $ ${montoSeguro.toLocaleString("es-CO")}` : `Pago registrado $ ${montoSeguro.toLocaleString("es-CO")}`}
+                                    <span className="text-sm font-bold text-white block">
+                                      {m.tipo === "deuda" 
+                                        ? `Deuda registrada $ ${montoSeguro.toLocaleString("es-CO")}` 
+                                        : `Pago registrado $ ${montoSeguro.toLocaleString("es-CO")}`
+                                      }
                                     </span>
-                                    <div className="text-xs text-gray-400 flex items-center gap-4 font-medium">
+                                    <div className="text-xs text-slate-400 flex items-center gap-4 font-medium">
                                       <span>{m.fecha}</span>
-                                      <span className={saldoSeguro > 0 ? "text-red-500" : "text-emerald-600 font-bold"}>
+                                      <span className={saldoSeguro > 0 ? "text-red-400 font-semibold" : "text-emerald-400 font-bold"}>
                                         Monto restante a pagar: {saldoSeguro > 0 ? `$ ${saldoSeguro.toLocaleString("es-CO")}` : "AL DÍA"}
                                       </span>
                                     </div>
                                   </div>
                                 </div>
-                                <button onClick={(e) => { e.stopPropagation(); ejecutarImpresion([m]); }} className="flex items-center gap-1.5 border border-[#dfe5ec] text-gray-700 bg-white px-3.5 h-[36px] rounded-lg text-xs font-semibold hover:bg-gray-50 cursor-pointer">
-                                  <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h6z"/></svg>Imprimir
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); ejecutarImpresion([m]); }} 
+                                  className="flex items-center gap-1.5 border border-[#1E293B]/80 bg-[#1B2336] hover:bg-[#1B2336]/80 text-slate-300 hover:text-white px-3.5 h-[36px] rounded-xl text-xs font-semibold cursor-pointer"
+                                >
+                                  <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h6z"/>
+                                  </svg>
+                                  Imprimir
                                 </button>
                               </div>
                             );
@@ -321,29 +373,21 @@ cerrarModal();
                         </div>
                         <div className="flex justify-end pt-4">
                           <button
-  type="button"
-  onClick={() => {
-    const filtrados = movs.filter(
-      m => seleccionados.includes(m.id)
-    )
-
-    if (filtrados.length === 0) {
-      toast.warning(
-        "Marca al menos un cuadrito."
-      )
-      return
-    }
-
-    ejecutarImpresion(filtrados)
-  }}
-  style={{
-    backgroundColor: "#10b981",
-    color: "#ffffff"
-  }}
-  className="flex flex-col items-center justify-center h-[64px] w-[160px] rounded-xl shadow-md hover:opacity-95 text-center p-2 cursor-pointer"
->
-                            <svg className="w-4 h-4 mb-0.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h6z"/></svg>
-                            <span className="text-[10px] font-black uppercase tracking-wider block">Imprimir</span><span className="text-[9px] font-bold uppercase tracking-wider opacity-90 block">seleccionados</span>
+                            type="button"
+                            onClick={() => {
+                              const filtrados = movs.filter(m => seleccionados.includes(m.id));
+                              if (filtrados.length === 0) {
+                                toast.warning("Marca al menos un cuadrito.");
+                                return;
+                              }
+                              ejecutarImpresion(filtrados);
+                            }}
+                            className="bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-md transition-all active:scale-[0.98]"
+                          >
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h6z"/>
+                            </svg>
+                            Imprimir seleccionados
                           </button>
                         </div>
                       </>
@@ -355,6 +399,7 @@ cerrarModal();
           })}
         </div>
       )}
+
       {/* COMPROBANTE DE IMPRESIÓN OFICIAL CON TEXTO DE SALDO ACTUALIZADO */}
       <div id="recibo-oficial-impresion" className="hidden print:block text-[#0f172a]">
         {movimientosAImprimir.length > 0 && (() => {
@@ -417,28 +462,63 @@ cerrarModal();
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-[fadeIn_0.2s_ease-out]">
           <div className="absolute inset-0" onClick={cerrarModal} />
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl relative z-10 border border-[#dfe5ec]">
+          <div className="bg-[#131926] rounded-3xl w-full max-w-md p-6 shadow-2xl relative z-10 border border-[#1E293B]/80 text-white">
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-bold text-[#06122B] flex items-center gap-2"><DollarSign className="w-5 h-5 text-[#1d4ed8]" />Registrar Movimiento de Caja</h3>
-              <button onClick={cerrarModal} className="text-gray-400 hover:text-gray-600 p-1"><X className="w-5 h-5" /></button>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-indigo-400" />
+                Registrar Movimiento de Caja
+              </h3>
+              <button onClick={cerrarModal} className="text-slate-400 hover:text-white p-1 transition-all">
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Seleccionar Apartamento</label>
-                <select value={unidadSeleccionada} onChange={(e) => setUnidadSeleccionada(e.target.value)} className="w-full border border-[#dfe5ec] h-[42px] px-3 rounded-lg text-sm bg-white focus:outline-none">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Seleccionar Apartamento
+                </label>
+                <select 
+                  value={unidadSeleccionada} 
+                  onChange={(e) => setUnidadSeleccionada(e.target.value)} 
+                  className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white h-[42px] px-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+                >
                   <option value="">-- Elige una unidad --</option>
-                  {apartamentos?.map((apto) => ( <option key={apto.unidad} value={apto.unidad}>Apto. {apto.unidad} - {apto.propietario}</option> ))}
+                  {apartamentos?.map((apto) => ( 
+                    <option key={apto.unidad} value={apto.unidad}>
+                      Apto. {apto.unidad} - {apto.propietario}
+                    </option> 
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Monto ($)</label>
-                <input type="number" placeholder="Ej. 120000" value={monto} onChange={(e) => setMonto(e.target.value)} className="w-full border border-[#dfe5ec] h-[42px] px-3 rounded-lg text-sm font-semibold text-[#06122B] focus:outline-none" />
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Monto ($)
+                </label>
+                <input 
+                  type="number" 
+                  placeholder="Ej. 120000" 
+                  value={monto} 
+                  onChange={(e) => setMonto(e.target.value)} 
+                  className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white h-[42px] px-3 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+                />
               </div>
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => handleRegistrarMovimiento("deuda")} style={{ backgroundColor: "#ef4444", color: "#ffffff" }} className="font-bold text-xs uppercase tracking-wider h-[42px] rounded-lg border border-red-600 hover:opacity-90 text-center cursor-pointer">Registrar Deuda</button>
-                <button type="button" onClick={() => handleRegistrarMovimiento("pago")} style={{ backgroundColor: "#22c55e", color: "#ffffff" }} className="font-bold text-xs uppercase tracking-wider h-[42px] rounded-lg border border-green-600 hover:opacity-90 text-center cursor-pointer">Registrar Pago</button>
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#1E293B]/20">
+                <button 
+                  type="button" 
+                  onClick={() => handleRegistrarMovimiento("deuda")} 
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider h-[42px] rounded-lg border border-red-600 hover:border-red-700 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Registrar Deuda
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => handleRegistrarMovimiento("pago")} 
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider h-[42px] rounded-lg border border-emerald-600 hover:border-emerald-700 transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Registrar Pago
+                </button>
               </div>
             </div>
           </div>

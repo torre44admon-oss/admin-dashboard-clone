@@ -37,6 +37,11 @@ export function RegistrarPagoModal({
     new Date().toISOString().split("T")[0]
   )
 
+  const handleSuccessClose = () => {
+    window.dispatchEvent(new Event("datosActualizados"))
+    onClose()
+  }
+
   useEffect(() => {
     if (!unidadSeleccionada) {
       setMultasPendientes([])
@@ -150,7 +155,7 @@ export function RegistrarPagoModal({
       setUnidadSeleccionada("")
       setValorPago("")
       setMensualidadSeleccionada("")
-      onClose()
+      handleSuccessClose()
       return
     }
 
@@ -194,7 +199,7 @@ export function RegistrarPagoModal({
       toast.success("Abono a cartera registrado correctamente")
       setUnidadSeleccionada("")
       setValorPago("")
-      onClose()
+      handleSuccessClose()
       return
     }
 
@@ -232,7 +237,7 @@ export function RegistrarPagoModal({
       toast.success("Pago de proyecto registrado correctamente")
       setUnidadSeleccionada("")
       setValorPago("")
-      onClose()
+      handleSuccessClose()
       return
     }
 
@@ -267,7 +272,7 @@ export function RegistrarPagoModal({
     setMultaSeleccionada("")
     setValorPago("")
     setMultasPendientes([])
-    onClose()
+    handleSuccessClose()
   }
 
   if (!isOpen) return null

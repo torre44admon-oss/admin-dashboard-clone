@@ -12,7 +12,8 @@ import {
   FolderPlus,
   Users,
   CalendarCheck,
-  Bell
+  Bell,
+  RotateCw
 } from "lucide-react"
 import { AsignarMultaModal } from "./AsignarMultaModal"
 import { RegistrarPagoModal } from "./RegistrarPagoModal"
@@ -46,12 +47,25 @@ export function ResumenContent({
   const [todosLosPagos, setTodosLosPagos] = useState<any[]>([])
   const [ultimosPagos, setUltimosPagos] = useState<any[]>([])
 
+  const [pagosDelMesCount, setPagosDelMesCount] = useState(0)
+  const [recaudacionMensualSum, setRecaudacionMensualSum] = useState(0)
+  const [activeMesName, setActiveMesName] = useState("")
+
+  const [recAdminSum, setRecAdminSum] = useState(0)
+  const [recCarteraSum, setRecCarteraSum] = useState(0)
+  const [recMultasSum, setRecMultasSum] = useState(0)
+  const [recProyectosSum, setRecProyectosSum] = useState(0)
+  const [deudaCarteraTotal, setDeudaCarteraTotal] = useState(0)
+
   const cargarUltimosPagos = async () => {
-    // 1. Fetch from mensualidades (Pagado)
-    const { data: pagosMensualidades } = await supabase
+    // 1. Fetch from mensualidades (All of them to find the latest billing period)
+    const { data: todasMensualidades } = await supabase
       .from("mensualidades")
       .select("*")
-      .eq("estado", "Pagado")
+
+    const pagosMensualidades = todasMensualidades ? todasMensualidades.filter(
+      (m: any) => m.estado === "Pagado"
+    ) : []
 
     // 2. Fetch from historial_cartera (pago)
     const { data: pagosCartera } = await supabase
@@ -80,7 +94,7 @@ export function ResumenContent({
           unidad: m.unidad,
           monto: m.valor,
           fecha: m.fecha_pago || m.created_at?.split("T")[0] || "",
-          concepto: `Administración - ${m.mes}`,
+          concepto: `Admin. ${m.mes}`,
           timestamp: new Date(m.fecha_pago || m.created_at).getTime() || 0
         })
       })
@@ -125,6 +139,83 @@ export function ResumenContent({
     // Sort by timestamp descending
     combined.sort((a, b) => b.timestamp - a.timestamp)
 
+    // Find the active billing cycle month (latest inserted record)
+    let activeMes = getMesActual()
+    let activeAnio = new Date().getFullYear().toString()
+
+    if (todasMensualidades && todasMensualidades.length > 0) {
+      const sorted = [...todasMensualidades].sort((a, b) => Number(b.id) - Number(a.id))
+      activeMes = sorted[0].mes
+      activeAnio = sorted[0].anio
+    }
+    setActiveMesName(activeMes)
+
+    // Calculate Pagos del Mes (Unique paid apartments for the active month/year)
+    const pagosDeEsteMes = todasMensualidades ? todasMensualidades.filter(
+      (m: any) => m.mes === activeMes && m.anio === activeAnio && m.estado === "Pagado"
+    ) : []
+
+    const uniqueApartmentsPaid = new Set(
+      pagosDeEsteMes.map((m: any) => m.unidad)
+    )
+    setPagosDelMesCount(uniqueApartmentsPaid.size)
+
+    // Calculate Recaudacion Mensual (All payments made in the current calendar month)
+    let totalRecaudado = 0
+    let tempAdmin = 0
+    let tempCartera = 0
+    let tempMultas = 0
+    let tempProyectos = 0
+
+    const hoy = new Date()
+    const currentYear = hoy.getFullYear()
+    const currentMonth = hoy.getMonth() // 0-11
+
+    combined.forEach((pago: any) => {
+      if (pago.fecha) {
+        const parts = pago.fecha.split("-")
+        if (parts.length === 3) {
+          const y = Number(parts[0])
+          const m = Number(parts[1]) - 1 // 0-indexed
+          if (y === currentYear && m === currentMonth) {
+            const montoNum = Number(pago.monto) || 0
+            totalRecaudado += montoNum
+
+            if (pago.concepto.startsWith("Admin.")) {
+              tempAdmin += montoNum
+            } else if (pago.concepto === "Abono de Cartera") {
+              tempCartera += montoNum
+            } else if (pago.concepto.startsWith("Multa:")) {
+              tempMultas += montoNum
+            } else if (pago.concepto.startsWith("Proyecto:")) {
+              tempProyectos += montoNum
+            }
+          }
+        }
+      }
+    })
+    setRecaudacionMensualSum(totalRecaudado)
+    setRecAdminSum(tempAdmin)
+    setRecCarteraSum(tempCartera)
+    setRecMultasSum(tempMultas)
+    setRecProyectosSum(tempProyectos)
+
+    // Calculate Total Deuda Cartera
+    const cargarDeudaTotal = async () => {
+      const { data: carteraRows } = await supabase
+        .from("cartera")
+        .select("deuda")
+
+      let totalDeuda = 0
+      if (carteraRows) {
+        carteraRows.forEach((row: any) => {
+          totalDeuda += Number(row.deuda) || 0
+        })
+      }
+      setDeudaCarteraTotal(totalDeuda)
+    }
+    cargarDeudaTotal()
+
     setTodosLosPagos(combined)
     setUltimosPagos(combined.slice(0, 5))
   }
@@ -168,11 +259,17 @@ export function ResumenContent({
       )
       .subscribe()
 
+    const handleDatosActualizados = () => {
+      cargarUltimosPagos()
+    }
+    window.addEventListener("datosActualizados", handleDatosActualizados)
+
     return () => {
       supabase.removeChannel(channelCartera)
       supabase.removeChannel(channelMultas)
       supabase.removeChannel(channelProyectos)
       supabase.removeChannel(channelMensualidades)
+      window.removeEventListener("datosActualizados", handleDatosActualizados)
     }
   }, [])
 
@@ -192,15 +289,60 @@ export function ResumenContent({
     ]
     return meses[new Date().getMonth()]
   }
+
+  const getFechaHoyFormateada = () => {
+    const dias = [
+      "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
+    ]
+    const meses = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+    const hoy = new Date()
+    const diaSemana = dias[hoy.getDay()]
+    const diaMes = hoy.getDate()
+    const mes = meses[hoy.getMonth()]
+    const anio = hoy.getFullYear()
+    return `${diaSemana}, ${diaMes} de ${mes} de ${anio}`
+  }
   
   return (
     <div className="font-sans max-w-7xl mx-auto text-slate-200">
+
+      {/* HEADER */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-[fadeIn_0.4s_ease-out]">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            Panel Principal
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Resumen general del estado de cuenta de la copropiedad
+          </p>
+        </div>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={() => {
+              cargarUltimosPagos()
+              toast.success("Datos sincronizados con Supabase")
+            }}
+            className="bg-[#131926]/90 border border-[#1E293B]/50 hover:bg-[#1E293B]/40 hover:text-white px-3.5 py-2.5 rounded-xl flex items-center gap-2 text-xs text-slate-300 font-medium transition-all active:scale-[0.98] cursor-pointer"
+          >
+            <RotateCw className="w-3.5 h-3.5 text-indigo-400" />
+            Sincronizar
+          </button>
+          <div className="bg-[#131926]/90 border border-[#1E293B]/50 px-4 py-2.5 rounded-xl flex items-center gap-2.5 text-xs text-slate-300 font-medium">
+            <CalendarCheck className="w-4 h-4 text-emerald-400" />
+            <span>{getFechaHoyFormateada()}</span>
+          </div>
+        </div>
+      </div>
       
       {/* STATS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8 animate-[fadeIn_0.5s_ease-out]">
         
         {/* Card 1: Ocupación de Unidades */}
-        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-indigo-500 p-5 rounded-2xl flex flex-col justify-between min-h-[130px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-indigo-500 p-5 rounded-2xl flex flex-col justify-between min-h-[160px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ocupación de Unidades</p>
@@ -212,62 +354,67 @@ export function ResumenContent({
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5">
+          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5 border-t border-[#1E293B]/20 pt-2">
             <span className="text-[11px] font-medium">100% de ocupación actual</span>
           </div>
         </div>
 
         {/* Card 2: Pagos del Mes */}
-        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-emerald-500 p-5 rounded-2xl flex flex-col justify-between min-h-[130px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-emerald-500 p-5 rounded-2xl flex flex-col justify-between min-h-[160px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pagos del Mes</p>
               <h3 className="text-3xl font-extrabold text-white mt-2">
-                0/{totalUnidades}
+                {pagosDelMesCount}/{totalUnidades}
               </h3>
             </div>
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
               <CalendarCheck className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5">
-            <span className="text-[11px] font-medium">Pagos recibidos de {getMesActual()}</span>
+          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5 border-t border-[#1E293B]/20 pt-2">
+            <span className="text-[11px] font-medium">Pagos recibidos de {activeMesName || getMesActual()}</span>
           </div>
         </div>
 
         {/* Card 3: Recaudación Mensual */}
-        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-sky-500 p-5 rounded-2xl flex flex-col justify-between min-h-[130px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-sky-500 p-5 rounded-2xl flex flex-col justify-between min-h-[160px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recaudación Mensual</p>
               <h3 className="text-3xl font-extrabold text-white mt-2">
-                $0
+                $ {recaudacionMensualSum.toLocaleString("es-CO")}
               </h3>
             </div>
             <div className="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 border border-sky-500/20">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5">
-            <span className="text-[11px] font-medium">Total acumulado en el mes actual</span>
+          
+          {/* Breakdown grid */}
+          <div className="text-[10px] text-slate-400 mt-2 grid grid-cols-2 gap-y-1 gap-x-2 border-t border-[#1E293B]/20 pt-2">
+            <div>Admin: <span className="text-emerald-400 font-bold">${recAdminSum.toLocaleString("es-CO")}</span></div>
+            <div>Cartera: <span className="text-indigo-400 font-bold">${recCarteraSum.toLocaleString("es-CO")}</span></div>
+            <div>Multas: <span className="text-amber-400 font-bold">${recMultasSum.toLocaleString("es-CO")}</span></div>
+            <div>Proy: <span className="text-blue-400 font-bold">${recProyectosSum.toLocaleString("es-CO")}</span></div>
           </div>
         </div>
 
-        {/* Card 4: Mantenimiento Activo */}
-        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-amber-500 p-5 rounded-2xl flex flex-col justify-between min-h-[130px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
+        {/* Card 4: Deuda en Cartera */}
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 border-l-4 border-l-rose-500 p-5 rounded-2xl flex flex-col justify-between min-h-[160px] hover:shadow-[0_4px_25px_rgba(0,0,0,0.15)] transition-all duration-300">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mantenimiento Activo</p>
-              <h3 className="text-3xl font-extrabold text-white mt-2">
-                0
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Deuda en Cartera</p>
+              <h3 className="text-3xl font-extrabold text-rose-400 mt-2">
+                $ {deudaCarteraTotal.toLocaleString("es-CO")}
               </h3>
             </div>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20">
+              <AlertCircle className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5">
-            <span className="text-[11px] font-medium">Reportes de daños pendientes</span>
+          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5 border-t border-[#1E293B]/20 pt-2">
+            <span className="text-[11px] font-medium">Saldos vencidos pendientes de cobro</span>
           </div>
         </div>
 
@@ -292,54 +439,59 @@ export function ResumenContent({
             </button>
           </div>
 
-          {/* Table Header */}
-          <div className="bg-[#1E293B]/30 rounded-xl text-slate-400 text-xs font-semibold px-4 py-3 grid grid-cols-5 text-center mb-4">
-            <div>Depto</div>
-            <div>Residente</div>
-            <div>Concepto</div>
-            <div>Monto</div>
-            <div>Fecha</div>
+          {/* Table Container */}
+          <div className="overflow-x-auto -mx-6 px-6">
+            <div className="min-w-[550px]">
+              {/* Table Header */}
+              <div className="bg-[#1E293B]/30 rounded-xl text-slate-400 text-xs font-semibold px-4 py-3 grid grid-cols-5 text-center mb-4">
+                <div>Depto</div>
+                <div>Residente</div>
+                <div>Concepto</div>
+                <div>Monto</div>
+                <div>Fecha</div>
+              </div>
+
+              {/* Table Content */}
+              {ultimosPagos.length > 0 ? (
+                <div className="flex-1 flex flex-col justify-start mt-2 divide-y divide-[#1E293B]/30">
+                  {ultimosPagos.map((pago, index) => {
+                    const apto = apartamentos.find((a) => a.unidad === pago.unidad)
+                    const residente = apto ? apto.propietario : "Desconocido"
+                    
+                    let badgeColor = "text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20"
+                    if (pago.concepto.startsWith("Multa:")) {
+                      badgeColor = "text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20"
+                    } else if (pago.concepto.startsWith("Proyecto:")) {
+                      badgeColor = "text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20"
+                    }
+
+                    return (
+                      <div 
+                        key={index} 
+                        className="grid grid-cols-5 text-center text-xs py-3.5 px-2 hover:bg-[#1E293B]/20 transition-all items-center text-slate-200"
+                      >
+                        <div className="font-semibold text-white">Apto. {pago.unidad}</div>
+                        <div className="truncate capitalize text-slate-300">{residente}</div>
+                        <div className="flex justify-center">
+                          <span className={`text-[10px] font-bold ${badgeColor} max-w-[125px] truncate`}>
+                            {pago.concepto}
+                          </span>
+                        </div>
+                        <div className="font-bold text-emerald-400">
+                          $ {Number(pago.monto).toLocaleString("es-CO")}
+                        </div>
+                        <div className="text-slate-400">{formatearFecha(pago.fecha)}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-slate-500 text-sm py-12 border border-dashed border-[#1E293B]/40 rounded-xl">
+                  Sin pagos registrados recientemente
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Table Content */}
-          {ultimosPagos.length > 0 ? (
-            <div className="flex-1 flex flex-col justify-start mt-2 divide-y divide-[#1E293B]/30">
-              {ultimosPagos.map((pago, index) => {
-                const apto = apartamentos.find((a) => a.unidad === pago.unidad)
-                const residente = apto ? apto.propietario : "Desconocido"
-                
-                let badgeColor = "text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20"
-                if (pago.concepto.startsWith("Multa:")) {
-                  badgeColor = "text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20"
-                } else if (pago.concepto.startsWith("Proyecto:")) {
-                  badgeColor = "text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20"
-                }
-
-                return (
-                  <div 
-                    key={index} 
-                    className="grid grid-cols-5 text-center text-xs py-3.5 px-2 hover:bg-[#1E293B]/20 transition-all items-center text-slate-200"
-                  >
-                    <div className="font-semibold text-white">Apto. {pago.unidad}</div>
-                    <div className="truncate capitalize text-slate-300">{residente}</div>
-                    <div className="flex justify-center">
-                      <span className={`text-[10px] font-bold ${badgeColor} max-w-[125px] truncate`}>
-                        {pago.concepto}
-                      </span>
-                    </div>
-                    <div className="font-bold text-emerald-400">
-                      $ {Number(pago.monto).toLocaleString("es-CO")}
-                    </div>
-                    <div className="text-slate-400">{formatearFecha(pago.fecha)}</div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-500 text-sm py-12 border border-dashed border-[#1E293B]/40 rounded-xl">
-              Sin pagos registrados recientemente
-            </div>
-          )}
         </div>
 
         {/* RIGHT COLUMN: Acciones Rápidas & Último Comunicado */}

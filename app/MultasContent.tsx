@@ -1,7 +1,7 @@
 "use client"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
-import { Plus, Pencil, Trash2, Search, Printer } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Printer, ChevronDown, ChevronUp } from "lucide-react"
 import { NuevaMultaModal } from "./NuevaMultaModal"
 
 interface Multa {
@@ -147,8 +147,8 @@ const agrupados = portafolioFiltrado.reduce(
 )
 
   return (
-    <div className="font-sans text-[#1e293b]">
-      {/* ESTILOS DE IMPRESIÓN EXCLUSIVOS EN LÍNEA: Esconde el resto de la web en la hoja */}
+    <div className="font-sans text-slate-200 animate-[fadeIn_0.4s_ease-out]">
+      {/* ESTILOS DE IMPRESIÓN EXCLUSIVOS EN LÍNEA */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body * { visibility: hidden; }
@@ -158,386 +158,299 @@ const agrupados = portafolioFiltrado.reduce(
         }
       `}} />
 
-      {/* CABECERA (Se ocultará automáticamente al imprimir) */}
+      {/* CABECERA */}
       <div className="flex items-center justify-between mb-6 clase-cabecera-ocultar-print">
         <div>
-          <h1 className="text-[28px] font-bold text-[#1e293b] tracking-tight">Multas</h1>
-          <p className="text-[#64748b] text-[15px] mt-0.5">Catálogo de infracciones y recargos</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Multas</h1>
+          <p className="text-slate-400 text-sm mt-1">Catálogo de infracciones y recargos</p>
         </div>
         <div className="flex items-center gap-3">
           {activeTab === "portafolio" && (
             <button 
               onClick={() => window.print()}
-              className="flex items-center gap-2 bg-white border border-[#dfe5ec] text-[#334155] px-4 h-[42px] rounded-lg text-[13px] font-medium shadow-sm hover:bg-gray-50 transition-colors cursor-pointer"
+              className="flex items-center gap-2 border border-[#1E293B]/80 bg-[#1B2336] hover:bg-[#1B2336]/80 text-slate-300 hover:text-white px-4 h-[42px] rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
             >
-              <Printer className="w-4 h-4 text-gray-500" />
+              <Printer className="w-4 h-4 text-slate-400" />
               <span>Imprimir PDF</span>
             </button>
           )}
           {activeTab === "multas" && (
-            <button onClick={() => setIsMultaModalOpen(true)} className="flex items-center gap-2 bg-[#ef4444] text-white px-5 h-[42px] rounded-lg font-medium text-sm hover:bg-[#dc2626] transition-colors cursor-pointer shadow-sm">
+            <button 
+              onClick={() => setIsMultaModalOpen(true)} 
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold h-[42px] px-5 rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-md transition-all active:scale-[0.98]"
+            >
               <Plus className="w-4 h-4" /> <span>Registrar Multa</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Selectores de Pestañas (Se ocultará automáticamente al imprimir) */}
-      <div className="flex gap-2 mb-6 bg-gray-100/50 p-1 rounded-xl border border-[#e2e8f0] w-fit">
+      {/* Selectores de Pestañas */}
+      <div className="flex gap-1.5 mb-6 bg-[#131926]/90 p-1.5 rounded-xl border border-[#1E293B]/50 w-fit">
+        <button
+          onClick={() => setActiveTab("multas")}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "multas"
+              ? "bg-[#1B2336] text-white shadow-sm border border-[#1E293B]/80"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          Multas
+        </button>
 
-  <button
-    onClick={() => setActiveTab("multas")}
-    className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${
-      activeTab === "multas"
-        ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]"
-        : "text-[#64748b]"
-    }`}
-  >
-    Multas
-  </button>
+        <button
+          onClick={() => setActiveTab("asignacion")}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "asignacion"
+              ? "bg-[#1B2336] text-white shadow-sm border border-[#1E293B]/80"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          Asignación
+        </button>
 
-  <button
-    onClick={() => setActiveTab("asignacion")}
-    className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${
-      activeTab === "asignacion"
-        ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]"
-        : "text-[#64748b]"
-    }`}
-  >
-    Asignación
-  </button>
-
-  <button
-    onClick={() => setActiveTab("portafolio")}
-    className={`px-4 py-1.5 font-medium rounded-lg text-sm cursor-pointer transition-all ${
-      activeTab === "portafolio"
-        ? "bg-white text-[#1e293b] shadow-sm border border-[#dfe5ec]"
-        : "text-[#64748b]"
-    }`}
-  >
-    Portafolio
-  </button>
-
-</div>
+        <button
+          onClick={() => setActiveTab("portafolio")}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "portafolio"
+              ? "bg-[#1B2336] text-white shadow-sm border border-[#1E293B]/80"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          Portafolio
+        </button>
+      </div>
 
       {activeTab === "multas" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {multas.map((m, idx) => (
+            <div
+              key={idx}
+              className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-2xl shadow-xl p-5 flex flex-col justify-between min-h-[170px] hover:border-[#1E293B] transition-all"
+            >
+              <div>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-base font-bold text-white">
+                    {m.t}
+                  </h3>
+                  <span className="font-extrabold text-red-400 text-sm">
+                    {m.m}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                  {m.d}
+                </p>
+              </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {multas.map((m, idx) => (
-      <div
-        key={idx}
-        className="bg-white p-6 rounded-2xl border border-[#dfe5ec] shadow-sm flex flex-col justify-between min-h-[170px]"
-      >
-        <div>
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-[17px] font-bold text-[#1e293b]">
-              {m.t}
-            </h3>
+              <div className="flex justify-between items-center border-t border-[#1E293B]/20 pt-4 mt-3">
+                <button className="flex items-center gap-1.5 border border-[#1E293B]/80 bg-[#1B2336] hover:bg-[#1B2336]/80 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer">
+                  <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                  Editor
+                </button>
 
-            <span className="font-bold text-[16px] text-red-500">
-              {m.m}
+                <button
+                  onClick={() =>
+                    saveM(multas.filter((_, i) => i !== idx))
+                  }
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-1.5 rounded-lg transition-all cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : activeTab === "asignacion" ? (
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-3xl shadow-2xl overflow-hidden text-white animate-[fadeIn_0.3s_ease-out] seccion-tabla-imprimir">
+          <div className="p-4 border-b border-[#1E293B]/40 flex items-center gap-3 bg-[#0B0F19]/40 no-imprimir-buscador">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider select-none">
+              Buscar:
             </span>
+            <div className="relative flex-1 max-w-sm">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Buscar por apartamento o nombre..."
+                value={buscarTexto}
+                onChange={(e) => setBuscarTexto(e.target.value)}
+                className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
+              />
+            </div>
           </div>
 
-          <p className="text-[14px] text-[#64748b] mb-4">
-            {m.d}
-          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="bg-[#0B0F19]/40 border-b border-[#1E293B]/40 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="px-6 py-3.5">Fecha Asignación</th>
+                  <th className="px-6 py-3.5">Fecha Vencimiento</th>
+                  <th className="px-6 py-3.5">Unidad</th>
+                  <th className="px-6 py-3.5">Propietario</th>
+                  <th className="px-6 py-3.5">Estado</th>
+                  <th className="px-6 py-3.5">Tipo Multa</th>
+                  <th className="px-6 py-3.5">Valor</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-[#1E293B]/20">
+                {registrosFiltrados.map((item, i) => (
+                  <tr key={i} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4 text-slate-300">
+                      {item.fecha_asignacion}
+                    </td>
+                    <td className="px-6 py-4 text-slate-300">
+                      {item.fecha_vencimiento}
+                    </td>
+                    <td className="px-6 py-4 font-bold text-white">
+                      {item.unidad}
+                    </td>
+                    <td className="px-6 py-4 text-slate-300 capitalize">
+                      {item.propietario}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                        item.estado === "Pagado"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : item.estado === "Vencida"
+                          ? "bg-red-500/10 text-red-400 border-red-500/20"
+                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                      }`}>
+                        {item.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-300">
+                      {item.tipo_multa}
+                    </td>
+                    <td className="px-6 py-4 font-extrabold text-emerald-400">
+                      {item.valor}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-
-        <div className="flex justify-between items-center border-t border-gray-100 pt-4 mt-2">
-          <button className="flex items-center gap-1.5 text-[#334155] border border-[#dfe5ec] bg-white px-4 py-1.5 rounded-lg text-[13px] font-medium cursor-pointer">
-            <Pencil className="w-3.5 h-3.5 text-gray-400" />
-            Editor
-          </button>
-
-          <button
-            onClick={() =>
-              saveM(multas.filter((_, i) => i !== idx))
-            }
-            className="text-[#ef4444] cursor-pointer p-1"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-
-) : activeTab === "asignacion" ? (
-
-  <div className="bg-white border border-[#dfe5ec] rounded-xl shadow-sm overflow-hidden bg-white animate-fade-in seccion-tabla-imprimir">
-
-    <div className="p-4 border-b border-[#dfe5ec] flex items-center gap-3 no-imprimir-buscador">
-      <span className="text-sm font-bold text-gray-500 uppercase select-none">
-        Buscar:
-      </span>
-
-      <div className="relative flex-1 max-w-sm">
-        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-
-        <input
-          type="text"
-          placeholder="Buscar por apartamento o nombre..."
-          value={buscarTexto}
-          onChange={(e) => setBuscarTexto(e.target.value)}
-          className="w-full pl-9 pr-4 py-1.5 border rounded-lg text-sm bg-white outline-none focus:border-[#cbd5e1] text-[#334155]"
-        />
-      </div>
-    </div>
-
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-sm text-[#334155]">
-        <thead>
-          <tr className="bg-gray-50 border-b border-[#dfe5ec] text-xs font-bold text-gray-400 uppercase">
-            <th className="px-6 py-3.5">Fecha Asignación</th>
-            <th className="px-6 py-3.5">Fecha Vencimiento</th>
-            <th className="px-6 py-3.5">Unidad</th>
-            <th className="px-6 py-3.5">Propietario</th>
-            <th className="px-6 py-3.5">Estado</th>
-            <th className="px-6 py-3.5">Tipo Multa</th>
-            <th className="px-6 py-3.5">Valor</th>
-          </tr>
-        </thead>
-
-        <tbody className="divide-y divide-[#dfe5ec]">
-          {registrosFiltrados.map((item, i) => (
-            <tr key={i}>
-              <td className="px-6 py-4">
-                {item.fecha_asignacion}
-              </td>
-
-              <td className="px-6 py-4">
-                {item.fecha_vencimiento}
-              </td>
-
-              <td className="px-6 py-4 font-bold">
-                {item.unidad}
-              </td>
-
-              <td className="px-6 py-4">
-                {item.propietario}
-              </td>
-
-              <td className="px-6 py-4">
-                {item.estado}
-              </td>
-
-              <td className="px-6 py-4">
-                {item.tipo_multa}
-              </td>
-
-              <td className="px-6 py-4 font-extrabold text-[#1d4ed8]">
-                {item.valor}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-) : (
-
-  <div className="bg-white border border-[#dfe5ec] rounded-xl shadow-sm overflow-hidden animate-fade-in">
-
-  <div className="p-4 border-b border-[#dfe5ec]">
-    <h2 className="text-xl font-bold">
-      Portafolio de Multas
-    </h2>
-  </div>
-<div className="p-4 border-b border-[#dfe5ec] flex items-center gap-3">
-  <span className="text-sm font-bold text-gray-500 uppercase">
-    Buscar:
-  </span>
-
-  <div className="relative flex-1 max-w-sm">
-    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-
-    <input
-      type="text"
-      placeholder="Buscar apartamento o propietario..."
-      value={buscarTexto}
-      onChange={(e) => setBuscarTexto(e.target.value)}
-      className="w-full pl-9 pr-4 py-1.5 border rounded-lg text-sm"
-    />
-  </div>
-</div>
-  <div className="p-6 space-y-4">
-
-  {Object.entries(agrupados).map(
-    ([unidad, multas]: any) => {
-
-      const propietario =
-        multas[0]?.propietario || ""
-
-      return (
-
-        <div
-          key={unidad}
-          className="
-            bg-gray-50
-            border
-            border-gray-100
-            rounded-3xl
-            overflow-hidden
-            shadow-sm
-          "
-        >
-
-          <button
-            onClick={() =>
-              setApartamentoAbierto(
-                apartamentoAbierto === unidad
-                  ? null
-                  : unidad
-              )
-            }
-            className="
-              w-full
-              px-4
-              py-4
-              flex
-              justify-between
-              items-center
-            "
-          >
-
-            <div className="text-left">
-
-              <h3 className="font-bold text-xl">
-                Apto. {unidad}
-              </h3>
-
-              <p className="text-gray-500">
-                Propietario: {propietario}
-              </p>
-
+      ) : (
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-3xl shadow-2xl overflow-hidden text-white animate-[fadeIn_0.3s_ease-out]">
+          <div className="p-5 border-b border-[#1E293B]/40 bg-[#0B0F19]/40">
+            <h2 className="text-lg font-bold text-white">
+              Portafolio de Multas
+            </h2>
+          </div>
+          <div className="p-4 border-b border-[#1E293B]/40 flex items-center gap-3 bg-[#0B0F19]/40">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider select-none">
+              Buscar:
+            </span>
+            <div className="relative flex-1 max-w-sm">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Buscar apartamento o propietario..."
+                value={buscarTexto}
+                onChange={(e) => setBuscarTexto(e.target.value)}
+                className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
+              />
             </div>
+          </div>
+          <div className="p-6 space-y-4">
+            {Object.entries(agrupados).map(([unidad, multas]: any) => {
+              const propietario = multas[0]?.propietario || ""
+              const abierto = apartamentoAbierto === unidad
 
-          </button>
+              return (
+                <div
+                  key={unidad}
+                  className="border border-[#1E293B]/30 rounded-2xl overflow-hidden bg-[#0B0F19]/60 hover:border-[#1E293B]/50 transition-all duration-200"
+                >
+                  <button
+                    onClick={() =>
+                      setApartamentoAbierto(abierto ? null : unidad)
+                    }
+                    className="w-full bg-[#0B0F19]/40 hover:bg-[#1E293B]/20 transition-all px-5 py-4.5 flex justify-between items-center text-white cursor-pointer"
+                  >
+                    <div className="text-left">
+                      <h3 className="font-extrabold text-base text-white">
+                        Apto. {unidad}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Propietario: <span className="text-slate-200 capitalize font-medium">{propietario}</span>
+                      </p>
+                    </div>
+                    {abierto ? (
+                      <ChevronUp className="w-5 h-5 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-slate-400" />
+                    )}
+                  </button>
 
-          {apartamentoAbierto === unidad && (
+                  {abierto && (
+                    <div className="border-t border-[#1E293B]/20 p-4 bg-[#0B0F19]/20 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#1E293B]/40 bg-[#0B0F19]/30 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left">Fecha Asignación</th>
+                            <th className="px-4 py-3 text-left">Fecha Vencimiento</th>
+                            <th className="px-4 py-3 text-left">Unidad</th>
+                            <th className="px-4 py-3 text-left">Propietario</th>
+                            <th className="px-4 py-3 text-left">Tipo Multa</th>
+                            <th className="px-4 py-3 text-left">Estado</th>
+                            <th className="px-4 py-3 text-left">Valor</th>
+                          </tr>
+                        </thead>
 
-  <div className="border-t p-4 overflow-x-auto">
-
-    <table className="w-full text-sm">
-
-      <thead>
-        <tr className="border-b border-[#dfe5ec] bg-gray-50">
-
-          <th className="px-4 py-3 text-left">
-            Fecha Asignación
-          </th>
-
-          <th className="px-4 py-3 text-left">
-            Fecha Vencimiento
-          </th>
-
-          <th className="px-4 py-3 text-left">
-            Unidad
-          </th>
-
-          <th className="px-4 py-3 text-left">
-            Propietario
-          </th>
-
-          <th className="px-4 py-3 text-left">
-            Tipo Multa
-          </th>
-
-          <th className="px-4 py-3 text-left">
-            Estado
-          </th>
-
-          <th className="px-4 py-3 text-left">
-            Valor
-          </th>
-
-        </tr>
-      </thead>
-
-      <tbody>
-
-        {multas.map((multa: any) => (
-
-          <tr
-            key={multa.id}
-            className="border-b border-[#dfe5ec]"
-          >
-
-            <td className="px-4 py-4">
-              {multa.fecha_asignacion}
-            </td>
-
-            <td className="px-4 py-4">
-              {multa.fecha_vencimiento}
-            </td>
-
-            <td className="px-4 py-4 font-bold">
-              {multa.unidad}
-            </td>
-
-            <td className="px-4 py-4">
-              {multa.propietario}
-            </td>
-
-            <td className="px-4 py-4">
-              {multa.tipo_multa}
-            </td>
-
-            <td className="px-4 py-4">
-
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  multa.estado === "Pagado"
-                    ? "bg-green-100 text-green-700"
-                    : multa.estado === "Vencida"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {multa.estado}
-              </span>
-
-            </td>
-
-            <td className="px-4 py-4 font-bold text-blue-600">
-              $
-              {Number(
-                multa.valor || 0
-              ).toLocaleString("es-CO")}
-            </td>
-
-          </tr>
-
-        ))}
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-)}
+                        <tbody className="divide-y divide-[#1E293B]/20">
+                          {multas.map((multa: any) => (
+                            <tr key={multa.id} className="hover:bg-white/5 transition-colors">
+                              <td className="px-4 py-4 text-slate-300">
+                                {multa.fecha_asignacion}
+                              </td>
+                              <td className="px-4 py-4 text-slate-300">
+                                {multa.fecha_vencimiento}
+                              </td>
+                              <td className="px-4 py-4 font-bold text-white">
+                                {multa.unidad}
+                              </td>
+                              <td className="px-4 py-4 text-slate-300 capitalize">
+                                {multa.propietario}
+                              </td>
+                              <td className="px-4 py-4 text-slate-300">
+                                {multa.tipo_multa}
+                              </td>
+                              <td className="px-4 py-4">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                  multa.estado === "Pagado"
+                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                    : multa.estado === "Vencida"
+                                    ? "bg-red-500/10 text-red-400 border-red-500/20"
+                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                }`}>
+                                  {multa.estado}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 font-extrabold text-emerald-400">
+                                $ {Number(multa.valor).toLocaleString("es-CO")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
+      )}
 
-      )
-    }
-  )}
-
-</div>
-
-</div>
-
-)}
       <NuevaMultaModal
-  isOpen={isMultaModalOpen}
-  onClose={() => setIsMultaModalOpen(false)}
-  onSave={(nM) => {
-    saveM([...multas, nM])
-    setIsMultaModalOpen(false)
-  }}
-/>
+        isOpen={isMultaModalOpen}
+        onClose={() => setIsMultaModalOpen(false)}
+        onSave={(nM) => {
+          saveM([...multas, nM])
+          setIsMultaModalOpen(false)
+        }}
+      />
     </div>
   )
 }

@@ -652,38 +652,28 @@ const [filtroAnio, setFiltroAnio] =
   }
 
   return (
-    <div className="font-sans text-[#1e293b]">
-
+    <div className="font-sans text-slate-200 animate-[fadeIn_0.4s_ease-out]">
       <div className="mb-6">
-
-        <h1 className="text-[28px] font-bold">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
           Cobros
         </h1>
-
-        <p className="text-[#64748b] text-[15px]">
+        <p className="text-slate-400 text-sm mt-1">
           Gestión de cuotas de mantenimiento
         </p>
-
       </div>
 
-      <div className="bg-white rounded-2xl border border-[#dfe5ec] shadow-sm p-5">
-
+      <div className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-3xl shadow-2xl p-6 text-white">
         <div className="flex flex-col md:flex-row gap-4 items-center mb-6">
-
-          <div className="flex items-center gap-3">
-
-            <span className="font-bold text-sm">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-400 whitespace-nowrap">
               Filtros:
             </span>
-
             <select
               value={filtroMes}
               onChange={(e) =>
-                setFiltroMes(
-                  e.target.value
-                )
+                setFiltroMes(e.target.value)
               }
-              className="border rounded-lg px-4 py-2 text-sm"
+              className="bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
             >
               <option value="Enero">Enero</option>
               <option value="Febrero">Febrero</option>
@@ -697,219 +687,130 @@ const [filtroAnio, setFiltroAnio] =
               <option value="Octubre">Octubre</option>
               <option value="Noviembre">Noviembre</option>
               <option value="Diciembre">Diciembre</option>
-              <option value="Todo el año">
-                Todo el año
-              </option>
+              <option value="Todo el año">Todo el año</option>
             </select>
 
             <input
               type="number"
               value={filtroAnio}
               onChange={(e) =>
-                setFiltroAnio(
-                  e.target.value
-                )
+                setFiltroAnio(e.target.value)
               }
-              className="border rounded-lg px-3 py-2 text-sm w-24"
+              className="bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-3 py-2 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
 
           <div className="relative flex-1 w-full">
-
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
               <Search className="w-4 h-4" />
             </span>
-
             <input
               type="text"
               placeholder="Buscar apartamento o propietario..."
               value={busqueda}
               onChange={(e) =>
-                setBusqueda(
-                  e.target.value
-                )
+                setBusqueda(e.target.value)
               }
-              className="w-full border rounded-lg pl-10 pr-3 py-2 text-sm"
+              className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
             />
-
           </div>
-
         </div>
 
         <div className="space-y-4">
+          {Object.entries(agrupados).map(([unidad, data]: any) => {
+            const abierto = apartamentosAbiertos.includes(unidad)
 
-          {Object.entries(
-            agrupados
-          ).map(
-            ([unidad, data]: any) => {
-              const abierto =
-                apartamentosAbiertos.includes(
-                  unidad
-                )
-
-              return (
-                <div
-                  key={unidad}
-                  className="border rounded-2xl overflow-hidden"
+            return (
+              <div
+                key={unidad}
+                className="border border-[#1E293B]/30 rounded-2xl overflow-hidden bg-[#0B0F19]/60 hover:border-[#1E293B]/50 transition-all duration-200"
+              >
+                <button
+                  onClick={() => toggleApartamento(unidad)}
+                  className="w-full bg-[#0B0F19]/40 hover:bg-[#1E293B]/20 transition-all px-5 py-4.5 flex items-center justify-between text-white cursor-pointer"
                 >
-
-                  <button
-                    onClick={() =>
-                      toggleApartamento(
-                        unidad
-                      )
-                    }
-                    className="w-full bg-gray-50 hover:bg-gray-100 transition px-5 py-4 flex items-center justify-between"
-                  >
-
-                    <div className="text-left">
-
-                      <h2 className="font-bold text-lg">
-                        Apto. {unidad}
-                      </h2>
-
-                      <p className="text-sm text-gray-500">
-                        Propietario:
-                        {" "}
-                        {
-                          data.propietario
-                        }
-                      </p>
-
-                    </div>
-
-                    {abierto ? (
-                      <ChevronUp />
-                    ) : (
-                      <ChevronDown />
-                    )}
-
-                  </button>
-
-                  {abierto && (
-                    <div className="p-5 bg-white">
-
-                      <div className="space-y-3">
-
-                        {data.recibos.map(
-                          (
-                            recibo: RegistroCobro,
-                            index: number
-                          ) => {
-                            const id = `${recibo.unidad}-${recibo.periodo}-${index}`
-
-                            return (
-                              <div
-                                key={id}
-                                className="border rounded-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
-                              >
-
-                                <div className="flex items-center gap-3">
-
-                                  <input
-                                    type="checkbox"
-                                    checked={seleccionados.includes(
-                                      id
-                                    )}
-                                    onChange={() =>
-                                      toggleSeleccionado(
-                                        id
-                                      )
-                                    }
-                                    className="w-4 h-4"
-                                  />
-
-                                  <div>
-
-                                    <p className="font-semibold">
-                                      {
-                                        recibo.periodo
-                                      }
-                                    </p>
-
-                                    <p className="text-sm text-gray-500">
-                                      {
-                                        recibo.fecha
-                                      }
-                                    </p>
-
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-4">
-
-                                  <span className="font-extrabold text-blue-600 text-lg">
-                                    {
-                                      recibo.total
-                                    }
-                                  </span>
-
-                                  <button
-                                    onClick={() =>
-                                      imprimirRecibos(
-                                        [
-                                          recibo,
-                                        ]
-                                      )
-                                    }
-                                    className="flex items-center gap-2 border px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
-                                  >
-
-                                    <Printer className="w-4 h-4" />
-
-                                    Imprimir
-
-                                  </button>
-
-                                </div>
-
-                              </div>
-                            )
-                          }
-                        )}
-
-                      </div>
-
-                      <div className="mt-5 flex justify-end">
-
-                        <button
-                          onClick={() => {
-                            const recibosSeleccionados =
-                              data.recibos.filter(
-                                (
-                                  recibo: RegistroCobro,
-                                  index: number
-                                ) => {
-                                  const id = `${recibo.unidad}-${recibo.periodo}-${index}`
-
-                                  return seleccionados.includes(
-                                    id
-                                  )
-                                }
-                              )
-
-                            imprimirRecibos(
-                              recibosSeleccionados
-                            )
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-medium flex items-center gap-2"
-                        >
-
-                          <Printer className="w-4 h-4" />
-
-                          Imprimir seleccionados
-
-                        </button>
-
-                      </div>
-
-                    </div>
+                  <div className="text-left">
+                    <h2 className="font-extrabold text-base text-white">
+                      Apto. {unidad}
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Propietario: <span className="text-slate-200 capitalize font-medium">{data.propietario}</span>
+                    </p>
+                  </div>
+                  {abierto ? (
+                    <ChevronUp className="w-5 h-5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-400" />
                   )}
-                </div>
-              )
-            }
-          )}
+                </button>
 
+                {abierto && (
+                  <div className="p-5 bg-[#0B0F19]/20 border-t border-[#1E293B]/20 space-y-4">
+                    <div className="space-y-3">
+                      {data.recibos.map((recibo: RegistroCobro, index: number) => {
+                        const id = `${recibo.unidad}-${recibo.periodo}-${index}`
+
+                        return (
+                          <div
+                            key={id}
+                            className="border border-[#1E293B]/30 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-[#131926]/90"
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={seleccionados.includes(id)}
+                                onChange={() => toggleSeleccionado(id)}
+                                className="w-4 h-4 accent-indigo-500 rounded bg-[#1B2336] border-[#1E293B]/80 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                              />
+                              <div>
+                                <p className="font-bold text-white text-sm">
+                                  {recibo.periodo}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {recibo.fecha}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 justify-between lg:justify-end">
+                              <span className="font-extrabold text-emerald-400 text-lg">
+                                {recibo.total}
+                              </span>
+                              <button
+                                onClick={() => imprimirRecibos([recibo])}
+                                className="flex items-center gap-1.5 border border-[#1E293B]/80 bg-[#1B2336] hover:bg-[#1B2336]/80 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                                Imprimir
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="mt-5 flex justify-end">
+                      <button
+                        onClick={() => {
+                          const recibosSeleccionados = data.recibos.filter(
+                            (recibo: RegistroCobro, index: number) => {
+                              const id = `${recibo.unidad}-${recibo.periodo}-${index}`
+                              return seleccionados.includes(id)
+                            }
+                          )
+                          imprimirRecibos(recibosSeleccionados)
+                        }}
+                        className="bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white px-5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-md transition-all active:scale-[0.98]"
+                      >
+                        <Printer className="w-4 h-4" />
+                        Imprimir seleccionados
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
