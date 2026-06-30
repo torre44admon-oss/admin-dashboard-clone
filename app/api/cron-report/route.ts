@@ -6,9 +6,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const isManual = searchParams.get("manual") === "true"
 
-    // 1. Obtener última configuración de mora de la base de datos
+    // 1. Obtener configuración automática
     const { data: configData, error: configError } = await supabase
-      .from("configuracion_tasas_mora")
+      .from("configuracion_automatico")
       .select("*")
       .order("id", { ascending: false })
       .limit(1)
@@ -228,7 +228,7 @@ export async function GET(request: Request) {
     if (response.ok && !isManual) {
       const fechaHoyString = `${hoyColombia.getFullYear()}-${hoyColombia.getMonth() + 1}-${hoyColombia.getDate()}`
       await supabase
-        .from("configuracion_tasas_mora")
+        .from("configuracion_automatico")
         .update({ fecha_ultimo_reporte: fechaHoyString })
         .eq("id", config.id)
     }

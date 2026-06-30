@@ -181,68 +181,80 @@ export function ConfiguracionContent() {
     // Carga de la base de datos Supabase
     const cargarDesdeSupabase = async () => {
       try {
-        const { data, error } = await supabase
+        // Tasas de mora
+        const { data: moraDatos } = await supabase
           .from("configuracion_tasas_mora")
           .select("*")
           .order("id", { ascending: false })
           .limit(1)
-
-        if (error) throw error
-
-        if (data && data.length > 0) {
-          const registro = data[0]
-          setIbcAnual(String(registro.ibc_banco_anual))
-          setMultiplicadorMora(String(registro.multiplicador_ley))
-          const usura = parseFloat(registro.ibc_banco_anual) * parseFloat(registro.multiplicador_ley)
-          const tasaMoraCalculada = usura > 0 ? usura / 12 : 0
-          setTasaMora(tasaMoraCalculada.toFixed(2))
-
-          // Sincronizar campos adicionales desde base de datos si existen
-          if (registro.dia_limite_pago !== undefined && registro.dia_limite_pago !== null) {
-            setDiaPagoCuota(String(registro.dia_limite_pago))
-            localStorage.setItem("dia_pago_cuota", String(registro.dia_limite_pago))
-          }
-          if (registro.dias_gracia_multas !== undefined && registro.dias_gracia_multas !== null) {
-            setDiasVencimientoMulta(String(registro.dias_gracia_multas))
-            localStorage.setItem("dias_vencimiento_multa", String(registro.dias_gracia_multas))
-          }
-          if (registro.dias_gracia_proyectos !== undefined && registro.dias_gracia_proyectos !== null) {
-            setDiasVencimientoProyecto(String(registro.dias_gracia_proyectos))
-            localStorage.setItem("dias_vencimiento_proyecto", String(registro.dias_gracia_proyectos))
-          }
-          if (registro.telefono_reportes !== undefined && registro.telefono_reportes !== null) {
-            setTelefonoReportes(String(registro.telefono_reportes))
-            localStorage.setItem("telefono_reportes", String(registro.telefono_reportes))
-          }
-          if (registro.dia_reporte_automatico !== undefined && registro.dia_reporte_automatico !== null) {
-            setDiaReporteAutomatico(String(registro.dia_reporte_automatico))
-            localStorage.setItem("dia_reporte_automatico", String(registro.dia_reporte_automatico))
-          }
-          if (registro.hora_reporte_automatico !== undefined && registro.hora_reporte_automatico !== null) {
-            const parsed = convertirDesde24h(String(registro.hora_reporte_automatico))
-            setHoraRep(parsed.h)
-            setMinutoRep(parsed.m)
-            setPeriodoRep(parsed.p)
-            localStorage.setItem("hora_reporte_automatico", String(registro.hora_reporte_automatico))
-          }
-          if (registro.envio_automatico_avisos !== undefined && registro.envio_automatico_avisos !== null) {
-            setEnvioAutomaticoAvisos(Boolean(registro.envio_automatico_avisos))
-            localStorage.setItem("envio_automatico_avisos", String(registro.envio_automatico_avisos))
-          }
-          if (registro.dia_envio_avisos !== undefined && registro.dia_envio_avisos !== null) {
-            setDiaEnvioAvisos(String(registro.dia_envio_avisos))
-            localStorage.setItem("dia_envio_avisos", String(registro.dia_envio_avisos))
-          }
-          if (registro.hora_envio_avisos !== undefined && registro.hora_envio_avisos !== null) {
-            const parsed = convertirDesde24h(String(registro.hora_envio_avisos))
-            setHoraAvi(parsed.h)
-            setMinutoAvi(parsed.m)
-            setPeriodoAvi(parsed.p)
-            localStorage.setItem("hora_envio_avisos", String(registro.hora_envio_avisos))
-          }
+        if (moraDatos && moraDatos.length > 0) {
+          const r = moraDatos[0]
+          setIbcAnual(String(r.ibc_banco_anual))
+          setMultiplicadorMora(String(r.multiplicador_ley))
+          const usura = parseFloat(r.ibc_banco_anual) * parseFloat(r.multiplicador_ley)
+          setTasaMora(usura > 0 ? (usura / 12).toFixed(2) : "0")
+          if (r.dia_limite_pago != null) { setDiaPagoCuota(String(r.dia_limite_pago)); localStorage.setItem("dia_pago_cuota", String(r.dia_limite_pago)) }
+          if (r.dias_gracia_multas != null) { setDiasVencimientoMulta(String(r.dias_gracia_multas)); localStorage.setItem("dias_vencimiento_multa", String(r.dias_gracia_multas)) }
+          if (r.dias_gracia_proyectos != null) { setDiasVencimientoProyecto(String(r.dias_gracia_proyectos)); localStorage.setItem("dias_vencimiento_proyecto", String(r.dias_gracia_proyectos)) }
         }
+
+        // Configuración torre
+        const { data: torreDatos } = await supabase
+          .from("configuracion_torre")
+          .select("*")
+          .order("id", { ascending: false })
+          .limit(1)
+        if (torreDatos && torreDatos.length > 0) {
+          const r = torreDatos[0]
+          if (r.nombre_torre) { setNombreTorre(r.nombre_torre); localStorage.setItem("nombre_torre", r.nombre_torre) }
+          if (r.logo_url) { setLogoUrl(r.logo_url); localStorage.setItem("logo_url", r.logo_url) }
+          if (r.direccion_torre) { setDireccion(r.direccion_torre); localStorage.setItem("direccion_torre", r.direccion_torre) }
+          if (r.monto_fijo) { setMontoFijo(r.monto_fijo); localStorage.setItem("monto_fijo", r.monto_fijo) }
+          if (r.nombre_cuota) { setNombreCuota(r.nombre_cuota); localStorage.setItem("nombre_cuota", r.nombre_cuota) }
+          if (r.moneda) { setMoneda(r.moneda); localStorage.setItem("moneda", r.moneda) }
+        }
+
+        // Mensaje aviso
+        const { data: avisoDatos } = await supabase
+          .from("configuracion_aviso")
+          .select("mensaje_aviso")
+          .order("id", { ascending: false })
+          .limit(1)
+        if (avisoDatos && avisoDatos.length > 0 && avisoDatos[0].mensaje_aviso) {
+          setMensajeAviso(avisoDatos[0].mensaje_aviso)
+          localStorage.setItem("mensaje_aviso", avisoDatos[0].mensaje_aviso)
+        }
+
+        // Configuración automático
+        const { data: autoDatos } = await supabase
+          .from("configuracion_automatico")
+          .select("*")
+          .order("id", { ascending: false })
+          .limit(1)
+        if (autoDatos && autoDatos.length > 0) {
+          const r = autoDatos[0]
+          if (r.telefono_reportes != null) { setTelefonoReportes(String(r.telefono_reportes)); localStorage.setItem("telefono_reportes", String(r.telefono_reportes)) }
+          if (r.dia_reporte_automatico != null) { setDiaReporteAutomatico(String(r.dia_reporte_automatico)); localStorage.setItem("dia_reporte_automatico", String(r.dia_reporte_automatico)) }
+          if (r.hora_reporte_automatico != null) { const p = convertirDesde24h(String(r.hora_reporte_automatico)); setHoraRep(p.h); setMinutoRep(p.m); setPeriodoRep(p.p); localStorage.setItem("hora_reporte_automatico", String(r.hora_reporte_automatico)) }
+          if (r.envio_automatico_avisos != null) { setEnvioAutomaticoAvisos(Boolean(r.envio_automatico_avisos)); localStorage.setItem("envio_automatico_avisos", String(r.envio_automatico_avisos)) }
+          if (r.dia_envio_avisos != null) { setDiaEnvioAvisos(String(r.dia_envio_avisos)); localStorage.setItem("dia_envio_avisos", String(r.dia_envio_avisos)) }
+          if (r.hora_envio_avisos != null) { const p = convertirDesde24h(String(r.hora_envio_avisos)); setHoraAvi(p.h); setMinutoAvi(p.m); setPeriodoAvi(p.p); localStorage.setItem("hora_envio_avisos", String(r.hora_envio_avisos)) }
+        }
+
+        // Clave de acceso
+        const { data: accesoDatos } = await supabase
+          .from("configuracion_acceso")
+          .select("*")
+          .order("id", { ascending: false })
+          .limit(1)
+        if (accesoDatos && accesoDatos.length > 0) {
+          const r = accesoDatos[0]
+          if (r.clave_acceso) localStorage.setItem("torre_admin_password", r.clave_acceso)
+          if (r.login_activo != null) { setLoginActivo(Boolean(r.login_activo)); localStorage.setItem("login_activo", String(r.login_activo)) }
+        }
+
       } catch (err) {
-        console.log("No se pudo cargar configuracion_tasas_mora de Supabase (posiblemente la tabla no existe). Usando caché local...", err)
+        console.log("No se pudo cargar configuración desde Supabase. Usando caché local...", err)
       }
     }
     cargarDesdeSupabase()
@@ -326,45 +338,58 @@ export function ConfiguracionContent() {
     localStorage.setItem("dia_envio_avisos", diaEnvioAvisos)
     localStorage.setItem("hora_envio_avisos", convertirA24h(horaAvi, minutoAvi, periodoAvi))
 
-    // Sincronizar en base de datos Supabase
+    // Sincronizar en base de datos Supabase - tabla configuracion_tasas_mora (solo tasas y gracia)
     try {
-      const meses = [
-        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-      ]
+      const parsedIbc = parseFloat(String(ibcAnual).replace(",", ".")) || 0
+      const parsedMult = parseFloat(String(multiplicadorMora).replace(",", ".")) || 0
+      const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
       const hoy = new Date()
       const mesVigente = meses[hoy.getMonth()]
       const anoVigente = hoy.getFullYear()
 
-      const parsedIbc = parseFloat(String(ibcAnual).replace(",", ".")) || 0
-      const parsedMult = parseFloat(String(multiplicadorMora).replace(",", ".")) || 0
+      await supabase.from("configuracion_tasas_mora").upsert({
+        ibc_banco_anual: parsedIbc,
+        multiplicador_ley: parsedMult,
+        mes_vigencia: mesVigente,
+        ano_vigencia: anoVigente,
+        dia_limite_pago: parseInt(diaPagoCuota) || 5,
+        dias_gracia_multas: parseInt(diasVencimientoMulta) || 15,
+        dias_gracia_proyectos: parseInt(diasVencimientoProyecto) || 60
+      }, { onConflict: "mes_vigencia,ano_vigencia" })
 
-      const { error: dbError } = await supabase
-        .from("configuracion_tasas_mora")
-        .upsert({
-          ibc_banco_anual: parsedIbc,
-          multiplicador_ley: parsedMult,
-          mes_vigencia: mesVigente,
-          ano_vigencia: anoVigente,
-          dia_limite_pago: parseInt(diaPagoCuota) || 5,
-          dias_gracia_multas: parseInt(diasVencimientoMulta) || 15,
-          dias_gracia_proyectos: parseInt(diasVencimientoProyecto) || 60,
+      // configuracion_torre
+      const { data: torreExist } = await supabase.from("configuracion_torre").select("id").order("id", { ascending: false }).limit(1)
+      if (torreExist && torreExist.length > 0) {
+        await supabase.from("configuracion_torre").update({ nombre_torre: nombreTorre, logo_url: logoUrl, direccion_torre: direccion, monto_fijo: montoFijo, nombre_cuota: nombreCuota, moneda }).eq("id", torreExist[0].id)
+      } else {
+        await supabase.from("configuracion_torre").insert({ nombre_torre: nombreTorre, logo_url: logoUrl, direccion_torre: direccion, monto_fijo: montoFijo, nombre_cuota: nombreCuota, moneda })
+      }
+
+      // configuracion_automatico
+      const { data: autoExist } = await supabase.from("configuracion_automatico").select("id").order("id", { ascending: false }).limit(1)
+      if (autoExist && autoExist.length > 0) {
+        await supabase.from("configuracion_automatico").update({
           telefono_reportes: telefonoReportes,
           dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
           hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
           envio_automatico_avisos: envioAutomaticoAvisos,
           dia_envio_avisos: parseInt(diaEnvioAvisos) || 1,
-          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi),
-          nombre_torre: nombreTorre,
-          logo_url: logoUrl,
-          direccion_torre: direccion,
-          monto_fijo: montoFijo
-        }, { onConflict: "mes_vigencia,ano_vigencia" })
+          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi)
+        }).eq("id", autoExist[0].id)
+      } else {
+        await supabase.from("configuracion_automatico").insert({
+          telefono_reportes: telefonoReportes,
+          dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
+          hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
+          envio_automatico_avisos: envioAutomaticoAvisos,
+          dia_envio_avisos: parseInt(diaEnvioAvisos) || 1,
+          hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi)
+        })
+      }
 
-      if (dbError) throw dbError
-      toast.success("Reglas de cobro sincronizadas en Supabase.")
+      toast.success("Configuración guardada y sincronizada con Supabase.")
     } catch (err) {
-      console.log("No se pudo sincronizar los límites en Supabase:", err)
+      console.log("No se pudo sincronizar en Supabase:", err)
     }
 
     // Notificar al sidebar y cabecera
@@ -495,11 +520,12 @@ export function ConfiguracionContent() {
   const guardarMensajeAviso = async () => {
     localStorage.setItem("mensaje_aviso", mensajeAviso)
     try {
-      await supabase
-        .from("configuracion_tasas_mora")
-        .update({ mensaje_aviso: mensajeAviso })
-        .order("id", { ascending: false })
-        .limit(1)
+      const { data: avisoExist } = await supabase.from("configuracion_aviso").select("id").order("id", { ascending: false }).limit(1)
+      if (avisoExist && avisoExist.length > 0) {
+        await supabase.from("configuracion_aviso").update({ mensaje_aviso: mensajeAviso }).eq("id", avisoExist[0].id)
+      } else {
+        await supabase.from("configuracion_aviso").insert({ mensaje_aviso: mensajeAviso })
+      }
     } catch (e) {
       console.log("No se pudo sincronizar el mensaje en Supabase", e)
     }
