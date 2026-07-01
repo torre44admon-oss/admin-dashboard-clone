@@ -61,9 +61,34 @@ export async function GET(request: Request) {
       .limit(1)
     const torreConfig = torreData?.[0] || {}
     const nombreTorre = torreConfig.nombre_torre || "Torre 44"
-    const logoUrl = torreConfig.logo_url || ""
     const direccion = torreConfig.direccion_torre || ""
     const montoFijoBase = parseFloat(torreConfig.monto_fijo || "20000")
+
+    // Si el logo es base64 (data:...), subirlo a Storage para obtener URL corta
+    // URLs largas con base64 hacen que Meta no pueda descargar la imagen
+    let logoUrl = torreConfig.logo_url || ""
+    if (logoUrl && logoUrl.startsWith("data:")) {
+      try {
+        const base64Data = logoUrl.split(",")[1]
+        const logoBuffer = Buffer.from(base64Data, "base64")
+        const mimeMatch = logoUrl.match(/data:([^;]+);base64/)
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/png"
+        const ext = mimeType.includes("webp") ? "webp" : mimeType.includes("jpeg") ? "jpg" : "png"
+        const logoBlob = new Blob([logoBuffer], { type: mimeType })
+        const { error: logoErr } = await supabase.storage
+          .from("avisos")
+          .upload(`logo-torre.${ext}`, logoBlob, { contentType: mimeType, upsert: true })
+        if (!logoErr) {
+          const { data: logoStorageData } = supabase.storage.from("avisos").getPublicUrl(`logo-torre.${ext}`)
+          logoUrl = logoStorageData.publicUrl
+        } else {
+          logoUrl = "" // sin logo antes que URL gigante
+        }
+      } catch (logoUploadErr) {
+        logoUrl = "" // sin logo antes que URL gigante
+      }
+    }
+
 
     // 3. Obtener mensaje del aviso
     const { data: avisoData } = await supabase
