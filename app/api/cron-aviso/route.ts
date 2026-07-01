@@ -205,16 +205,40 @@ export async function GET(request: Request) {
           direccion
         })
 
-        let dynamicImageUrl = `${origin}/api/aviso-image?${queryParams.toString()}&t=${Date.now()}`
-        if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
-          dynamicImageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/640px-WhatsApp.svg.png"
-        }
+        const avisoImageUrl = `${origin}/api/aviso-image?${queryParams.toString()}`
 
         const msgText = `Hola ${u.propietario}, le envío su aviso de cobro para ${periodoTexto}.`
+
+        let finalImageUrl = avisoImageUrl
+
+        // Si no es localhost: descargar la imagen y subirla a Supabase Storage
+        // para obtener una URL pública limpia que Meta pueda descargar
+        if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
+          try {
+            const imgRes = await fetch(avisoImageUrl)
+            if (imgRes.ok) {
+              const imgBuffer = await imgRes.arrayBuffer()
+              const imgBlob = new Blob([imgBuffer], { type: "image/png" })
+              const fileName = `aviso-auto-${u.unidad}-${Date.now()}.png`
+              const { error: uploadError } = await supabase.storage
+                .from("avisos")
+                .upload(fileName, imgBlob, { contentType: "image/png", upsert: true })
+              if (!uploadError) {
+                const { data: urlData } = supabase.storage.from("avisos").getPublicUrl(fileName)
+                finalImageUrl = urlData.publicUrl
+              }
+            }
+          } catch (imgErr) {
+            console.log("No se pudo subir imagen a Storage, usando URL directa:", imgErr)
+          }
+        } else {
+          finalImageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/640px-WhatsApp.svg.png"
+        }
+
         const resWhatsapp = await fetch(`${origin}/api/whatsapp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ telefono: telefonoClean, mensaje: msgText, imageUrl: dynamicImageUrl })
+          body: JSON.stringify({ telefono: telefonoClean, mensaje: msgText, imageUrl: finalImageUrl })
         })
         const dataWhatsapp = await resWhatsapp.json()
 
