@@ -218,10 +218,11 @@ export async function GET(request: Request) {
         })
         const dataWhatsapp = await resWhatsapp.json()
 
-        if (resWhatsapp.ok && dataWhatsapp.success) {
-          resultados.push({ unidad: u.unidad, success: true, ref: dataWhatsapp.ref })
+        const enviado = resWhatsapp.ok && (dataWhatsapp?.messages?.[0]?.id || dataWhatsapp?.contacts?.[0])
+        if (enviado) {
+          resultados.push({ unidad: u.unidad, success: true, ref: dataWhatsapp?.messages?.[0]?.id })
         } else {
-          resultados.push({ unidad: u.unidad, success: false, error: dataWhatsapp.error || "Error al enviar WhatsApp" })
+          resultados.push({ unidad: u.unidad, success: false, error: dataWhatsapp?.error?.message || dataWhatsapp?.error || "Error al enviar WhatsApp" })
         }
       } catch (err: any) {
         resultados.push({ unidad: u.unidad, success: false, error: err.message || "Error inesperado" })
