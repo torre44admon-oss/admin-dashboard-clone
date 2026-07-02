@@ -340,6 +340,31 @@ export function ConfiguracionContent() {
 
     // Sincronizar en base de datos Supabase - tabla configuracion_tasas_mora (solo tasas y gracia)
     try {
+      let finalLogoUrl = logoUrl
+      if (logoUrl && logoUrl.startsWith("data:")) {
+        try {
+          const resLogo = await fetch(logoUrl)
+          const blob = await resLogo.blob()
+          const mimeType = blob.type
+          const ext = mimeType.includes("webp") ? "webp" : mimeType.includes("jpeg") ? "jpg" : "png"
+          const fileName = `logo-torre-${Date.now()}.${ext}`
+          const { error: uploadError } = await supabase.storage
+            .from("avisos")
+            .upload(fileName, blob, {
+              contentType: mimeType,
+              upsert: true
+            })
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from("avisos").getPublicUrl(fileName)
+            finalLogoUrl = urlData.publicUrl
+            setLogoUrl(finalLogoUrl)
+            localStorage.setItem("logo_url", finalLogoUrl)
+          }
+        } catch (uploadErr) {
+          console.error("Error al subir logo a storage:", uploadErr)
+        }
+      }
+
       const parsedIbc = parseFloat(String(ibcAnual).replace(",", ".")) || 0
       const parsedMult = parseFloat(String(multiplicadorMora).replace(",", ".")) || 0
       const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
@@ -360,9 +385,9 @@ export function ConfiguracionContent() {
       // configuracion_torre
       const { data: torreExist } = await supabase.from("configuracion_torre").select("id").order("id", { ascending: false }).limit(1)
       if (torreExist && torreExist.length > 0) {
-        await supabase.from("configuracion_torre").update({ nombre_torre: nombreTorre, logo_url: logoUrl, direccion_torre: direccion, monto_fijo: montoFijo, nombre_cuota: nombreCuota, moneda }).eq("id", torreExist[0].id)
+        await supabase.from("configuracion_torre").update({ nombre_torre: nombreTorre, logo_url: finalLogoUrl, direccion_torre: direccion, monto_fijo: montoFijo, nombre_cuota: nombreCuota, moneda }).eq("id", torreExist[0].id)
       } else {
-        await supabase.from("configuracion_torre").insert({ nombre_torre: nombreTorre, logo_url: logoUrl, direccion_torre: direccion, monto_fijo: montoFijo, nombre_cuota: nombreCuota, moneda })
+        await supabase.from("configuracion_torre").insert({ nombre_torre: nombreTorre, logo_url: finalLogoUrl, direccion_torre: direccion, monto_fijo: montoFijo, nombre_cuota: nombreCuota, moneda })
       }
 
       // configuracion_automatico
