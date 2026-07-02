@@ -213,7 +213,12 @@ export async function GET(request: Request) {
         if (mensualidades) {
           mensualidades.forEach((m: any) => {
             const esMesActual = String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
-            if (!esMesActual) cargos.push({ concepto: `Membresía ${m.mes} ${m.anio}`, monto: Number(m.valor) })
+            // Solo mostrar mensualidades PASADAS como cargo (no el mes actual ni meses futuros)
+            const indiceMesMensualidad = mesesNombres.findIndex(mn => mn.toLowerCase() === String(m.mes).toLowerCase())
+            const fechaMensualidad = new Date(Number(m.anio), indiceMesMensualidad)
+            const fechaVigente = new Date(anoVigente, mesesNombres.findIndex(mn => mn.toLowerCase() === mesVigente.toLowerCase()))
+            const esMesPasado = fechaMensualidad < fechaVigente
+            if (!esMesActual && esMesPasado) cargos.push({ concepto: `Membresía ${m.mes} ${m.anio}`, monto: Number(m.valor) })
           })
         }
         if (multas) multas.forEach((m: any) => cargos.push({ concepto: `Multa: ${m.tipo_multa || "General"}`, monto: Number(m.valor) }))
