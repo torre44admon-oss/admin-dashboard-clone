@@ -530,8 +530,31 @@ export function ConfiguracionContent() {
 
     const reader = new FileReader()
     reader.onload = (event) => {
-      setLogoUrl(event.target?.result as string)
-      toast.success("Logo cargado (presiona Guardar para confirmar)")
+      const img = new window.Image()
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas")
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext("2d")
+          if (ctx) {
+            ctx.drawImage(img, 0, 0)
+            const pngDataUrl = canvas.toDataURL("image/png")
+            setLogoUrl(pngDataUrl)
+            toast.success("Logo cargado y convertido a PNG (presiona Guardar para confirmar)")
+            return
+          }
+        } catch (err) {
+          console.error("Error al convertir logo a PNG:", err)
+        }
+        setLogoUrl(event.target?.result as string)
+        toast.success("Logo cargado (presiona Guardar para confirmar)")
+      }
+      img.onerror = () => {
+        setLogoUrl(event.target?.result as string)
+        toast.success("Logo cargado (presiona Guardar para confirmar)")
+      }
+      img.src = event.target?.result as string
     }
     reader.readAsDataURL(file)
   }
