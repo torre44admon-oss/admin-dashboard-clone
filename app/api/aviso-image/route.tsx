@@ -32,6 +32,28 @@ export async function GET(request: NextRequest) {
       year: "numeric"
     })
 
+    // Convierte logoUrl a base64 local si es una URL remota
+    // Satori (Next OG) no puede renderizar imágenes de URLs externas directamente de forma confiable
+    let logoBase64 = ""
+    if (logoUrl) {
+      if (logoUrl.startsWith("data:")) {
+        logoBase64 = logoUrl
+      } else if (logoUrl.startsWith("http")) {
+        try {
+          const res = await fetch(logoUrl)
+          if (res.ok) {
+            const buffer = await res.arrayBuffer()
+            const mimeType = res.headers.get("content-type") || "image/png"
+            const binaryString = new Uint8Array(buffer).reduce((acc, byte) => acc + String.fromCharCode(byte), "")
+            const base64 = btoa(binaryString)
+            logoBase64 = `data:${mimeType};base64,${base64}`
+          }
+        } catch (e) {
+          console.error("Error al obtener base64 del logo:", e)
+        }
+      }
+    }
+
     return new ImageResponse(
       (
         <div
@@ -75,9 +97,9 @@ export async function GET(request: NextRequest) {
               >
                 {/* Left side: Logo & Title */}
                 <div style={{ display: "flex", gap: "22px", flex: 1, minWidth: 0, marginRight: "20px" }}>
-                  {logoUrl ? (
+                  {logoBase64 ? (
                     <img
-                      src={logoUrl}
+                      src={logoBase64}
                       width="85"
                       height="85"
                       style={{
