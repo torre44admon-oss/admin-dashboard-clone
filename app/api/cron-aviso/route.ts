@@ -91,23 +91,7 @@ export async function GET(request: Request) {
         logoUrl = "" // sin logo antes que URL gigante
       }
     }
-    // Si es URL remota: descargarla y convertir a base64 aquí (Node.js tiene Buffer completo)
-    if (logoUrl && logoUrl.startsWith("http")) {
-      try {
-        const logoRes = await fetch(logoUrl)
-        if (logoRes.ok) {
-          const ct = logoRes.headers.get("content-type") || "image/png"
-          if (ct.startsWith("image/")) {
-            const logoBuffer = await logoRes.arrayBuffer()
-            const base64 = Buffer.from(logoBuffer).toString("base64")
-            logoUrl = `data:${ct};base64,${base64}`
-          }
-        }
-      } catch (fetchErr) {
-        console.log("No se pudo descargar el logo:", fetchErr)
-        logoUrl = ""
-      }
-    }
+
 
 
     // 3. Obtener mensaje del aviso
