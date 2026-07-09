@@ -42,11 +42,18 @@ export async function GET(request: NextRequest) {
         try {
           const res = await fetch(logoUrl)
           if (res.ok) {
-            const buffer = await res.arrayBuffer()
-            const mimeType = res.headers.get("content-type") || "image/png"
-            const binaryString = new Uint8Array(buffer).reduce((acc, byte) => acc + String.fromCharCode(byte), "")
-            const base64 = btoa(binaryString)
-            logoBase64 = `data:${mimeType};base64,${base64}`
+            const ct = res.headers.get("content-type") || ""
+            // Solo procesar si es realmente una imagen
+            if (ct.startsWith("image/")) {
+              const buffer = await res.arrayBuffer()
+              const bytes = new Uint8Array(buffer)
+              let binary = ""
+              for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i])
+              }
+              const base64 = btoa(binary)
+              logoBase64 = `data:${ct};base64,${base64}`
+            }
           }
         } catch (e) {
           console.error("Error al obtener base64 del logo:", e)

@@ -64,8 +64,11 @@ export async function GET(request: Request) {
     const direccion = torreConfig.direccion_torre || ""
     const montoFijoBase = parseFloat(torreConfig.monto_fijo || "20000")
 
-    // Si el logo es base64 (data:...), subirlo a Storage para obtener URL corta
-    // URLs largas con base64 hacen que Meta no pueda descargar la imagen
+    // Preparar logoUrl para aviso-image:
+    // - Si es base64 (data:...) → subir a Storage (URL corta para Meta)
+    // - Si es URL http (ya en Storage) → descargar aquí en Node.js y convertir a base64
+    //   para pasarlo a aviso-image directamente. La función Edge de aviso-image no puede
+    //   hacer fetch a URLs externas de forma confiable, pero cron-aviso sí (Node.js).
     let logoUrl = torreConfig.logo_url || ""
     if (logoUrl && logoUrl.startsWith("data:")) {
       try {
@@ -86,6 +89,23 @@ export async function GET(request: Request) {
         }
       } catch (logoUploadErr) {
         logoUrl = "" // sin logo antes que URL gigante
+      }
+    }
+    // Si es URL remota: descargarla y convertir a base64 aquí (Node.js tiene Buffer completo)
+    if (logoUrl && logoUrl.startsWith("http")) {
+      try {
+        const logoRes = await fetch(logoUrl)
+        if (logoRes.ok) {
+          const ct = logoRes.headers.get("content-type") || "image/png"
+          if (ct.startsWith("image/")) {
+            const logoBuffer = await logoRes.arrayBuffer()
+            const base64 = Buffer.from(logoBuffer).toString("base64")
+            logoUrl = `data:${ct};base64,${base64}`
+          }
+        }
+      } catch (fetchErr) {
+        console.log("No se pudo descargar el logo:", fetchErr)
+        logoUrl = ""
       }
     }
 
