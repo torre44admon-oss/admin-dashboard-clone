@@ -46,12 +46,7 @@ export async function GET(request: NextRequest) {
             // Solo procesar si es realmente una imagen
             if (ct.startsWith("image/")) {
               const buffer = await res.arrayBuffer()
-              const bytes = new Uint8Array(buffer)
-              let binary = ""
-              for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i])
-              }
-              const base64 = btoa(binary)
+              const base64 = Buffer.from(buffer).toString("base64")
               logoBase64 = `data:${ct};base64,${base64}`
             }
           }
