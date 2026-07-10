@@ -365,16 +365,11 @@ export default function Dashboard() {
           setIsModalOpen(false)
         }
 
-        onSave={(nueva) => {
-
-          const listaActualizada = [
-            ...unidades,
-            nueva
-          ]
-
-          setUnidades(listaActualizada)
-
-
+        onSave={async () => {
+          // Recargar desde Supabase para garantizar sincronización
+          const { data } = await supabase.from("unidades").select("*")
+          if (data) setUnidades(data)
+          setIsModalOpen(false)
         }}
       />
 
@@ -403,7 +398,9 @@ export default function Dashboard() {
           if (error) {
             alert("Error al actualizar la unidad: " + error.message)
           } else {
-            setUnidades(prev => prev.map(u => u.unidad === unidadActualizada.unidad ? unidadActualizada : u))
+            // Recargar desde Supabase para garantizar sincronización
+            const { data } = await supabase.from("unidades").select("*")
+            if (data) setUnidades(data)
             setIsEditModalOpen(false)
             setSelectedUnidad(null)
           }

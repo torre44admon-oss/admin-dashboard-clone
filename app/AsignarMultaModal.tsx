@@ -69,6 +69,7 @@ export function AsignarMultaModal({
 const asignarMulta = async () => {
   if (!unidadSeleccionada || !multaSeleccionada) {
     toast.warning("Seleccione apartamento y multa")
+    return
   }
 
   const unidad = unidades.find(
