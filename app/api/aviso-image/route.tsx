@@ -32,10 +32,10 @@ export async function GET(request: NextRequest) {
       year: "numeric"
     })
 
-    // Satori (Next OG) no puede renderizar imágenes de URLs externas directamente de forma confiable,
-    // pero sí soporta data URLs base64 locales.
-    // Como estamos en Node.js runtime, podemos usar Buffer de forma segura para hacer la conversión:
-    let logoSrc = ""
+    // Satori (Next OG) permite pasar un ArrayBuffer directamente al atributo `src` de <img>.
+    // Esta es la forma oficial y más robusta de renderizar imágenes remotas en ImageResponse,
+    // evitando cualquier problema de codificación de caracteres o límites de tamaño de base64.
+    let logoSrc: any = ""
     if (logoUrl) {
       if (logoUrl.startsWith("data:")) {
         logoSrc = logoUrl
@@ -45,9 +45,7 @@ export async function GET(request: NextRequest) {
           if (res.ok) {
             const ct = res.headers.get("content-type") || "image/png"
             if (ct.startsWith("image/")) {
-              const buffer = await res.arrayBuffer()
-              const base64 = Buffer.from(buffer).toString("base64")
-              logoSrc = `data:${ct};base64,${base64}`
+              logoSrc = await res.arrayBuffer()
             }
           }
         } catch (e) {
