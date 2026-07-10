@@ -32,9 +32,29 @@ export async function GET(request: NextRequest) {
       year: "numeric"
     })
 
-    // En Node.js runtime, Satori puede cargar URLs remotas directamente en <img>
-    // No necesitamos convertir a base64 manualmente
-    const logoSrc = logoUrl || ""
+    // Satori (Next OG) no puede renderizar imágenes de URLs externas directamente de forma confiable,
+    // pero sí soporta data URLs base64 locales.
+    // Como estamos en Node.js runtime, podemos usar Buffer de forma segura para hacer la conversión:
+    let logoSrc = ""
+    if (logoUrl) {
+      if (logoUrl.startsWith("data:")) {
+        logoSrc = logoUrl
+      } else if (logoUrl.startsWith("http")) {
+        try {
+          const res = await fetch(logoUrl)
+          if (res.ok) {
+            const ct = res.headers.get("content-type") || "image/png"
+            if (ct.startsWith("image/")) {
+              const buffer = await res.arrayBuffer()
+              const base64 = Buffer.from(buffer).toString("base64")
+              logoSrc = `data:${ct};base64,${base64}`
+            }
+          }
+        } catch (e) {
+          console.error("Error al descargar logo en el backend:", e)
+        }
+      }
+    }
 
     return new ImageResponse(
       (
