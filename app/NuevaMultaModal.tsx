@@ -20,7 +20,7 @@ export function NuevaMultaModal({ isOpen, onClose, onSave }: Props) {
     if (!t.trim() || !m.trim()) return
     
     // Formatear el monto automáticamente con puntos como en tu imagen ($ 35.000)
-    const montoFormateado = `$ ${Number(m).toLocaleString("es-DO")}`
+    const montoFormateado = `$ ${Number(m).toLocaleString("es-CO")}`
     
     onSave({ t, d: d || "Sin descripción", m: montoFormateado })
     setT(""); setD(""); setM("")

@@ -62,7 +62,110 @@ const cargarMultasAsignadas = async () => {
   const { data, error } = await supabase
     .from("multas_asignadas")
     .select("*")
-    .order("fecha", { ascending: false })
+    .order("fecha_asignacion", { ascending: false })
+
+  if (error) {
+    console.error(error)
+    return
+  }
+
+  setMultasAsignadas(data || [])
+}
+const cargarPortafolioMultas = async () => {
+  const { data, error } = await supabase
+    .from("portafolio_multas")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error(error)
+    return
+  }
+
+  setPortafolioMultas(data || [])
+}
+const verificarMultasVencidas = async () => {
+
+  const hoy = new Date()
+    .toISOString()
+    .split("T")[0]
+
+  await supabase
+    .from("multas_asignadas")
+    .update({
+      estado: "Vencida"
+    })
+    .lt("fecha_vencimiento", hoy)
+    .eq("estado", "Pendiente")
+
+  await supabase
+    .from("portafolio_multas")
+"use client"
+import { supabase } from "@/lib/supabase"
+import { useState, useEffect } from "react"
+import { Plus, Pencil, Trash2, Search, Printer, ChevronDown, ChevronUp } from "lucide-react"
+import { NuevaMultaModal } from "./NuevaMultaModal"
+import { toast } from "sonner"
+
+interface Multa {
+  id?: number
+  t: string
+  m: string
+  d: string
+}
+
+interface RegistroPortafolio {
+  fecha: string
+  unidad: string
+  propietario: string
+  Estado: string
+  cargo: string
+  total: string
+}
+
+export function MultasContent() {
+  const [activeTab, setActiveTab] = useState<
+  "multas" | "asignacion" | "portafolio"
+>("multas")
+  const [isMultaModalOpen, setIsMultaModalOpen] = useState(false)
+  const [multas, setMultas] = useState<Multa[]>([])
+  const [registrosPortafolio, setRegistrosPortafolio] = useState<RegistroPortafolio[]>([])
+  const [multasAsignadas, setMultasAsignadas] = useState<any[]>([])
+  const [portafolioMultas, setPortafolioMultas] = useState<any[]>([])
+  const [buscarTexto, setBuscarTexto] = useState("")
+const [apartamentoAbierto, setApartamentoAbierto] =
+
+  useState<string | null>(null)
+  useEffect(() => {
+  const iniciar = async () => {
+    await verificarMultasVencidas()
+
+    await cargarMultas()
+    await cargarMultasAsignadas()
+    await cargarPortafolioMultas()
+  }
+
+  iniciar()
+}, [])
+
+const cargarMultas = async () => {
+  const { data, error } = await supabase
+    .from("multas")
+    .select("*")
+    .order("id")
+
+  if (error) {
+    console.error(error)
+    return
+  }
+
+  setMultas(data || [])
+}
+const cargarMultasAsignadas = async () => {
+  const { data, error } = await supabase
+    .from("multas_asignadas")
+    .select("*")
+    .order("fecha_asignacion", { ascending: false })
 
   if (error) {
     console.error(error)
@@ -106,8 +209,7 @@ const verificarMultasVencidas = async () => {
     .lt("fecha_vencimiento", hoy)
     .eq("estado", "Pendiente")
 }
-  const saveM = (n: Multa[]) => { setMultas(n); localStorage.setItem("multas_db", JSON.stringify(n)) }
-  const savePortafolioH = (n: RegistroPortafolio[]) => { setRegistrosPortafolio(n); localStorage.setItem("portafolio_db", JSON.stringify(n)) }
+  const saveM = (n: Multa[]) => { setMultas(n) }
 
   const registrosFiltrados = multasAsignadas.filter((item) => {
   const busqueda = buscarTexto.toLowerCase()
@@ -249,9 +351,15 @@ const agrupados = portafolioFiltrado.reduce(
                 </button>
 
                 <button
-                  onClick={() =>
-                    saveM(multas.filter((_, i) => i !== idx))
-                  }
+                  onClick={async () => {
+                    const multa = multas[idx] as any
+                    if (!confirm("¿Eliminar esta multa del catálogo?")) return
+                    if (multa.id) {
+                      const { error } = await supabase.from("multas").delete().eq("id", multa.id)
+                      if (error) { toast.error("Error al eliminar multa"); return }
+                    }
+                    await cargarMultas()
+                  }}
                   className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-1.5 rounded-lg transition-all cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -446,8 +554,14 @@ const agrupados = portafolioFiltrado.reduce(
       <NuevaMultaModal
         isOpen={isMultaModalOpen}
         onClose={() => setIsMultaModalOpen(false)}
-        onSave={(nM) => {
-          saveM([...multas, nM])
+        onSave={async (nM) => {
+          const { error } = await supabase.from("multas").insert([{
+            t: nM.t,
+            d: nM.d,
+            m: nM.m
+          }])
+          if (error) { toast.error("Error al guardar multa"); return }
+          await cargarMultas()
           setIsMultaModalOpen(false)
         }}
       />

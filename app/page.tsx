@@ -255,9 +255,18 @@ export default function Dashboard() {
             <UnidadesTable
               unidades={unidades}
               adminMode={adminMode}
-              onDelete={(idx) => {
-                const n = unidades.filter((_, i) => i !== idx)
-                setUnidades(n)
+              onDelete={async (idx) => {
+                const unidadAEliminar = unidades[idx]
+                if (!confirm(`¿Eliminar la unidad ${unidadAEliminar.unidad}? Esta acción no se puede deshacer.`)) return
+                const { error } = await supabase
+                  .from("unidades")
+                  .delete()
+                  .eq("unidad", unidadAEliminar.unidad)
+                if (error) {
+                  alert("Error al eliminar: " + error.message)
+                } else {
+                  setUnidades(unidades.filter((_, i) => i !== idx))
+                }
               }}
               onEdit={(idx) => {
                 setSelectedUnidad(unidades[idx])

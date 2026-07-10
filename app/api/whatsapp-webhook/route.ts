@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const montoFijoBase = parseFloat(torreConfig.monto_fijo || "20000")
 
     const { data: configAviso } = await supabase.from("configuracion_aviso").select("*").order("id", { ascending: false }).limit(1)
-    const mensajeAviso = configAviso?.[0]?.mensaje || "Por favor realizar el pago a tiempo."
+    const mensajeAviso = configAviso?.[0]?.mensaje_aviso || configAviso?.[0]?.mensaje || "Por favor realizar el pago a tiempo."
 
     const { data: configMoraData } = await supabase.from("configuracion_tasas_mora").select("*").order("id", { ascending: false }).limit(1)
     const configMora = configMoraData?.[0] || {}

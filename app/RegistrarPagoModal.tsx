@@ -256,8 +256,8 @@ export function RegistrarPagoModal({
     if (multaAsignadaId) {
       await supabase
         .from("multas_asignadas")
-        .delete()
-        .eq("multa_id", multaAsignadaId)
+        .update({ estado: "Pagado" })
+        .eq("id", Number(multaAsignadaId))
     }
 
     if (error) {
