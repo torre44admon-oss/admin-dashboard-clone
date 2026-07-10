@@ -389,10 +389,24 @@ export default function Dashboard() {
           setSelectedUnidad(null)
         }}
 
-        onSave={(unidadActualizada) => {
-          setUnidades(prev => prev.map(u => u.unidad === unidadActualizada.unidad ? unidadActualizada : u))
-          setIsEditModalOpen(false)
-          setSelectedUnidad(null)
+        onSave={async (unidadActualizada) => {
+          const { error } = await supabase
+            .from("unidades")
+            .update({
+              propietario: unidadActualizada.propietario,
+              telefono: unidadActualizada.telefono,
+              email: unidadActualizada.email,
+              piso: unidadActualizada.piso,
+            })
+            .eq("unidad", unidadActualizada.unidad)
+
+          if (error) {
+            alert("Error al actualizar la unidad: " + error.message)
+          } else {
+            setUnidades(prev => prev.map(u => u.unidad === unidadActualizada.unidad ? unidadActualizada : u))
+            setIsEditModalOpen(false)
+            setSelectedUnidad(null)
+          }
         }}
 
         unidad={selectedUnidad}
