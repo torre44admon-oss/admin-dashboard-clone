@@ -60,17 +60,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "Message ignored (not a key phrase)" })
     }
 
-    // 1. Buscar apartamento asociado al número del remitente
-    // Buscamos teléfonos que contengan el número remitente (eliminando código de país para mayor flexibilidad)
+    // 1. Buscar TODOS los apartamentos asociados al número del remitente
     const phoneNoCountry = senderPhone.startsWith("57") ? senderPhone.substring(2) : senderPhone
     const { data: unidades, error: errUnidades } = await supabase
       .from("unidades")
       .select("*")
       .or(`telefono.ilike.%${phoneNoCountry}%,telefono.ilike.%${senderPhone}%`)
-      .limit(1)
 
     if (errUnidades || !unidades || unidades.length === 0) {
-      // Si no existe, responder un mensaje informativo
       await enviarTextoWhatsApp(
         senderPhone,
         `👋 ¡Hola! Te has comunicado con la administración de Alto de Santa Elena.\n\n⚠️ No encontramos ningún apartamento registrado con tu número de teléfono (${senderPhone}). Por favor comunícate con la administración para registrar tus datos.`
@@ -78,13 +75,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "Sender not registered in DB" })
     }
 
-    const u = unidades[0]
-
-    // 2. Obtener datos de la torre y configuración
+    // 2. Obtener datos de la torre y configuración (una sola vez para todas las unidades)
     const { data: torreData } = await supabase.from("configuracion_torre").select("*").order("id", { ascending: false }).limit(1)
     const torreConfig = torreData?.[0] || {}
     const nombreTorre = torreConfig.nombre_torre || "Torre 44"
-    const direccion = torreConfig.direccion_torre || ""
     const montoFijoBase = parseFloat(torreConfig.monto_fijo || "20000")
 
     const { data: configAviso } = await supabase.from("configuracion_aviso").select("*").order("id", { ascending: false }).limit(1)
@@ -93,7 +87,6 @@ export async function POST(request: Request) {
     const { data: configMoraData } = await supabase.from("configuracion_tasas_mora").select("*").order("id", { ascending: false }).limit(1)
     const configMora = configMoraData?.[0] || {}
 
-    // Tasas
     const { data: tasasData } = await supabase.from("tasas_mora_mensual").select("*")
     const mapaTasas: Record<string, any> = {}
     if (tasasData) {
@@ -103,7 +96,6 @@ export async function POST(request: Request) {
       })
     }
 
-    // Mes actual
     const mesesNombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
     const hoyColombia = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }))
     const fechaCiclo = hoyColombia.getDate() > 20
@@ -113,108 +105,107 @@ export async function POST(request: Request) {
     const anoVigente = fechaCiclo.getFullYear()
     const periodoTexto = `${mesVigente} de ${anoVigente}`
 
-    // 3. Consultar Deudas
-    const { data: mensualidades } = await supabase.from("mensualidades").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
-    const { data: multas } = await supabase.from("multas_asignadas").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
-    const { data: proyectos } = await supabase.from("proyectos_asignados").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
-    const { data: cartera } = await supabase.from("cartera").select("deuda").eq("unidad", u.unidad).single()
-    const deudaCartera = Number(cartera?.deuda) || 0
+    // 3. Enviar un mensaje por cada apartamento vinculado al número
+    for (const u of unidades) {
+      const { data: mensualidades } = await supabase.from("mensualidades").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
+      const { data: multas } = await supabase.from("multas_asignadas").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
+      const { data: proyectos } = await supabase.from("proyectos_asignados").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
+      const { data: cartera } = await supabase.from("cartera").select("deuda").eq("unidad", u.unidad).single()
+      const deudaCartera = Number(cartera?.deuda) || 0
 
-    let interesMoraAcumulado = 0
-    const startOfToday = new Date(hoyColombia)
-    startOfToday.setHours(0, 0, 0, 0)
+      let interesMoraAcumulado = 0
+      const startOfToday = new Date(hoyColombia)
+      startOfToday.setHours(0, 0, 0, 0)
 
-    const mensualidadVigente = mensualidades?.find(
-      (m: any) => String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
-    )
-    const montoCuota = mensualidadVigente ? parseFloat(mensualidadVigente.valor) : (montoFijoBase || 120000)
+      const mensualidadVigente = mensualidades?.find(
+        (m: any) => String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
+      )
+      const montoCuota = mensualidadVigente ? parseFloat(mensualidadVigente.valor) : (montoFijoBase || 120000)
 
-    if (mensualidades) {
-      mensualidades.forEach((m: any) => {
-        const esMesActual = String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
-        if (esMesActual) return
-        const fechaLimite = new Date(m.fecha_limite)
-        fechaLimite.setHours(0,0,0,0)
-        const diasRetraso = Math.max(0, Math.floor((startOfToday.getTime() - fechaLimite.getTime()) / 86400000))
-        if (diasRetraso > 0) {
-          const claveMes = `${String(m.mes).toLowerCase()}_${m.anio}`
-          const tasaInfo = mapaTasas[claveMes]
-          let tasaDiaria = tasaInfo ? Math.pow(1 + (parseFloat(String(tasaInfo.ibc)) < 1 ? parseFloat(String(tasaInfo.ibc))*100 : parseFloat(String(tasaInfo.ibc))) * parseFloat(String(tasaInfo.mult||1.5)) / 100, 1/365) - 1 : (2.4/100)/30
-          interesMoraAcumulado += Math.round((Number(m.valor)||0) * tasaDiaria * diasRetraso)
-        }
-      })
+      if (mensualidades) {
+        mensualidades.forEach((m: any) => {
+          const esMesActual = String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
+          if (esMesActual) return
+          const fechaLimite = new Date(m.fecha_limite)
+          fechaLimite.setHours(0,0,0,0)
+          const diasRetraso = Math.max(0, Math.floor((startOfToday.getTime() - fechaLimite.getTime()) / 86400000))
+          if (diasRetraso > 0) {
+            const claveMes = `${String(m.mes).toLowerCase()}_${m.anio}`
+            const tasaInfo = mapaTasas[claveMes]
+            let tasaDiaria = tasaInfo ? Math.pow(1 + (parseFloat(String(tasaInfo.ibc)) < 1 ? parseFloat(String(tasaInfo.ibc))*100 : parseFloat(String(tasaInfo.ibc))) * parseFloat(String(tasaInfo.mult||1.5)) / 100, 1/365) - 1 : (2.4/100)/30
+            interesMoraAcumulado += Math.round((Number(m.valor)||0) * tasaDiaria * diasRetraso)
+          }
+        })
+      }
+
+      const graciaMultas = configMora.dias_gracia_multas || 15
+      if (multas) {
+        multas.forEach((m: any) => {
+          const fechaAsig = new Date(m.fecha_asignacion || m.created_at)
+          fechaAsig.setHours(0,0,0,0)
+          const diasRetraso = Math.max(0, Math.floor((startOfToday.getTime() - fechaAsig.getTime()) / 86400000))
+          if (diasRetraso > graciaMultas) {
+            const claveMes = `${mesesNombres[fechaAsig.getMonth()].toLowerCase()}_${fechaAsig.getFullYear()}`
+            const tasaInfo = mapaTasas[claveMes]
+            let tasaDiaria = tasaInfo ? Math.pow(1 + (parseFloat(String(tasaInfo.ibc)) < 1 ? parseFloat(String(tasaInfo.ibc))*100 : parseFloat(String(tasaInfo.ibc))) * parseFloat(String(tasaInfo.mult||1.5)) / 100, 1/365) - 1 : (2.4/100)/30
+            interesMoraAcumulado += Math.round((Number(m.valor)||0) * tasaDiaria * (diasRetraso - graciaMultas))
+          }
+        })
+      }
+
+      const graciaProyectos = configMora.dias_gracia_proyectos || 60
+      if (proyectos) {
+        proyectos.forEach((p: any) => {
+          const fechaAsig = new Date(p.fecha || p.created_at)
+          fechaAsig.setHours(0,0,0,0)
+          const diasRetraso = Math.max(0, Math.floor((startOfToday.getTime() - fechaAsig.getTime()) / 86400000))
+          if (diasRetraso > graciaProyectos) {
+            const claveMes = `${mesesNombres[fechaAsig.getMonth()].toLowerCase()}_${fechaAsig.getFullYear()}`
+            const tasaInfo = mapaTasas[claveMes]
+            let tasaDiaria = tasaInfo ? Math.pow(1 + (parseFloat(String(tasaInfo.ibc)) < 1 ? parseFloat(String(tasaInfo.ibc))*100 : parseFloat(String(tasaInfo.ibc))) * parseFloat(String(tasaInfo.mult||1.5)) / 100, 1/365) - 1 : (2.4/100)/30
+            interesMoraAcumulado += Math.round((Number(p.valor)||0) * tasaDiaria * (diasRetraso - graciaProyectos))
+          }
+        })
+      }
+
+      const cargos: any[] = []
+      if (mensualidades) {
+        mensualidades.forEach((m: any) => {
+          const esMesActual = String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
+          const indiceMesMensualidad = mesesNombres.findIndex(mn => mn.toLowerCase() === String(m.mes).toLowerCase())
+          const fechaMensualidad = new Date(Number(m.anio), indiceMesMensualidad)
+          const fechaVigente = new Date(anoVigente, mesesNombres.findIndex(mn => mn.toLowerCase() === mesVigente.toLowerCase()))
+          const esMesPasado = fechaMensualidad < fechaVigente
+          if (!esMesActual && esMesPasado) cargos.push({ concepto: `Membresía ${m.mes} ${m.anio}`, monto: Number(m.valor) })
+        })
+      }
+      if (multas) multas.forEach((m: any) => cargos.push({ concepto: `Multa: ${m.tipo_multa || "General"}`, monto: Number(m.valor) }))
+      if (proyectos) proyectos.forEach((p: any) => cargos.push({ concepto: `Proyecto: ${p.proyecto || "General"}`, monto: Number(p.valor) }))
+      if (interesMoraAcumulado > 0) cargos.push({ concepto: "Intereses de Mora (Ley 675)", monto: interesMoraAcumulado })
+      if (deudaCartera > 0) cargos.push({ concepto: "Cartera Anterior Pendiente", monto: deudaCartera })
+
+      const total = montoCuota + cargos.reduce((acc, c) => acc + (parseFloat(c.monto) || 0), 0)
+
+      let msgText = `👋 *Hola ${u.propietario}* (Apto. ${u.unidad})\n`
+      msgText += `Estado de cuenta para *${periodoTexto}*:\n\n`
+      msgText += `• *Cuota Administrativa:* $ ${montoCuota.toLocaleString("es-CO")}\n`
+
+      if (cargos.length > 0) {
+        msgText += `\n*Cargos adicionales:*\n`
+        cargos.forEach((c: any) => {
+          msgText += `• ${c.concepto}: $ ${Number(c.monto).toLocaleString("es-CO")}\n`
+        })
+      }
+
+      msgText += `\n------------------------------------\n`
+      msgText += `*TOTAL A PAGAR: $ ${total.toLocaleString("es-CO")}*\n\n`
+
+      if (mensajeAviso) {
+        msgText += `_${mensajeAviso}_`
+      }
+
+      await enviarTextoWhatsApp(senderPhone, msgText)
     }
-
-    const graciaMultas = configMora.dias_gracia_multas || 15
-    if (multas) {
-      multas.forEach((m: any) => {
-        const fechaAsig = new Date(m.fecha_asignacion || m.created_at)
-        fechaAsig.setHours(0,0,0,0)
-        const diasRetraso = Math.max(0, Math.floor((startOfToday.getTime() - fechaAsig.getTime()) / 86400000))
-        if (diasRetraso > graciaMultas) {
-          const claveMes = `${mesesNombres[fechaAsig.getMonth()].toLowerCase()}_${fechaAsig.getFullYear()}`
-          const tasaInfo = mapaTasas[claveMes]
-          let tasaDiaria = tasaInfo ? Math.pow(1 + (parseFloat(String(tasaInfo.ibc)) < 1 ? parseFloat(String(tasaInfo.ibc))*100 : parseFloat(String(tasaInfo.ibc))) * parseFloat(String(tasaInfo.mult||1.5)) / 100, 1/365) - 1 : (2.4/100)/30
-          interesMoraAcumulado += Math.round((Number(m.valor)||0) * tasaDiaria * (diasRetraso - graciaMultas))
-        }
-      })
-    }
-
-    const graciaProyectos = configMora.dias_gracia_proyectos || 60
-    if (proyectos) {
-      proyectos.forEach((p: any) => {
-        const fechaAsig = new Date(p.fecha || p.created_at)
-        fechaAsig.setHours(0,0,0,0)
-        const diasRetraso = Math.max(0, Math.floor((startOfToday.getTime() - fechaAsig.getTime()) / 86400000))
-        if (diasRetraso > graciaProyectos) {
-          const claveMes = `${mesesNombres[fechaAsig.getMonth()].toLowerCase()}_${fechaAsig.getFullYear()}`
-          const tasaInfo = mapaTasas[claveMes]
-          let tasaDiaria = tasaInfo ? Math.pow(1 + (parseFloat(String(tasaInfo.ibc)) < 1 ? parseFloat(String(tasaInfo.ibc))*100 : parseFloat(String(tasaInfo.ibc))) * parseFloat(String(tasaInfo.mult||1.5)) / 100, 1/365) - 1 : (2.4/100)/30
-          interesMoraAcumulado += Math.round((Number(p.valor)||0) * tasaDiaria * (diasRetraso - graciaProyectos))
-        }
-      })
-    }
-
-    const cargos: any[] = []
-    if (mensualidades) {
-      mensualidades.forEach((m: any) => {
-        const esMesActual = String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
-        const indiceMesMensualidad = mesesNombres.findIndex(mn => mn.toLowerCase() === String(m.mes).toLowerCase())
-        const fechaMensualidad = new Date(Number(m.anio), indiceMesMensualidad)
-        const fechaVigente = new Date(anoVigente, mesesNombres.findIndex(mn => mn.toLowerCase() === mesVigente.toLowerCase()))
-        const esMesPasado = fechaMensualidad < fechaVigente
-        if (!esMesActual && esMesPasado) cargos.push({ concepto: `Membresía ${m.mes} ${m.anio}`, monto: Number(m.valor) })
-      })
-    }
-    if (multas) multas.forEach((m: any) => cargos.push({ concepto: `Multa: ${m.tipo_multa || "General"}`, monto: Number(m.valor) }))
-    if (proyectos) proyectos.forEach((p: any) => cargos.push({ concepto: `Proyecto: ${p.proyecto || "General"}`, monto: Number(p.valor) }))
-    if (interesMoraAcumulado > 0) cargos.push({ concepto: "Intereses de Mora (Ley 675)", monto: interesMoraAcumulado })
-    if (deudaCartera > 0) cargos.push({ concepto: "Cartera Anterior Pendiente", monto: deudaCartera })
-
-    const total = montoCuota + cargos.reduce((acc, c) => acc + (parseFloat(c.monto) || 0), 0)
-
-    // 4. Construir el estado de cuenta por escrito (texto)
-    let msgText = `👋 *Hola ${u.propietario}* (Apto. ${u.unidad})\n`
-    msgText += `Este es tu estado de cuenta para *${periodoTexto}*:\n\n`
-    
-    msgText += `• *Cuota Administrativa:* $ ${montoCuota.toLocaleString("es-CO")}\n`
-    
-    if (cargos.length > 0) {
-      msgText += `\n*Cargos adicionales:*\n`
-      cargos.forEach((c: any) => {
-        msgText += `• ${c.concepto}: $ ${Number(c.monto).toLocaleString("es-CO")}\n`
-      })
-    }
-    
-    msgText += `\n------------------------------------\n`
-    msgText += `*TOTAL A PAGAR: $ ${total.toLocaleString("es-CO")}*\n\n`
-    
-    if (mensajeAviso) {
-      msgText += `_${mensajeAviso}_`
-    }
-
-    // 5. Responder mensaje de WhatsApp por texto
-    await enviarTextoWhatsApp(senderPhone, msgText)
 
     return NextResponse.json({ success: true, message: "Invoice sent automatically via Chatbot" })
   } catch (error: any) {
