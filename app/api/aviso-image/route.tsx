@@ -101,12 +101,12 @@ export async function GET(request: NextRequest) {
                   {logoSrc ? (
                     <img
                       src={logoSrc}
-                      width={85}
-                      height={85}
+                      width={110}
+                      height={110}
                       style={{
-                        width: "85px",
-                        height: "85px",
-                        borderRadius: "18px",
+                        width: "110px",
+                        height: "110px",
+                        borderRadius: "22px",
                         objectFit: "cover",
                         flexShrink: 0,
                       }}
@@ -116,13 +116,13 @@ export async function GET(request: NextRequest) {
                       style={{
                         background: "#2d4486",
                         color: "#ffffff",
-                        width: "85px",
-                        height: "85px",
-                        borderRadius: "22px",
+                        width: "110px",
+                        height: "110px",
+                        borderRadius: "25px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "30px",
+                        fontSize: "40px",
                         fontWeight: "bold",
                         flexShrink: 0,
                       }}
