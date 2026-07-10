@@ -131,10 +131,10 @@ export async function GET(request: NextRequest) {
                     </div>
                   )}
 
-                  <div style={{ display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
+                  <div style={{ display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center", flex: 1 }}>
                     <span
                       style={{
-                        fontSize: nombreTorre.length > 15 ? "28px" : "42px",
+                        fontSize: nombreTorre.length > 25 ? "18px" : nombreTorre.length > 15 ? "22px" : "36px",
                         fontWeight: "bold",
                         color: "#ffffff",
                         margin: 0,
