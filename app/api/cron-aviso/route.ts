@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -239,7 +241,7 @@ export async function GET(request: Request) {
           direccion
         })
 
-        const avisoImageUrl = `${origin}/api/aviso-image?${queryParams.toString()}`
+        const avisoImageUrl = `${origin}/api/aviso-image?${queryParams.toString()}&t=${Date.now()}`
 
         const msgText = `Hola ${u.propietario}, le envío su aviso de cobro para ${periodoTexto}.`
 
