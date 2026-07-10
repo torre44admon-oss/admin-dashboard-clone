@@ -41,6 +41,9 @@ export default function Dashboard() {
   const [isEditModalOpen, setIsEditModalOpen] =
     useState(false)
 
+  const [selectedUnidad, setSelectedUnidad] =
+    useState<Unidad | null>(null)
+
   const [adminMode, setAdminMode] =
     useState(false)
 
@@ -257,6 +260,7 @@ export default function Dashboard() {
                 setUnidades(n)
               }}
               onEdit={(idx) => {
+                setSelectedUnidad(unidades[idx])
                 setIsEditModalOpen(true)
               }}
               onAdd={() => setIsModalOpen(true)}
@@ -380,15 +384,18 @@ export default function Dashboard() {
 
         isOpen={isEditModalOpen}
 
-        onClose={() =>
+        onClose={() => {
           setIsEditModalOpen(false)
-        }
+          setSelectedUnidad(null)
+        }}
 
-        onSave={() =>
+        onSave={(unidadActualizada) => {
+          setUnidades(prev => prev.map(u => u.unidad === unidadActualizada.unidad ? unidadActualizada : u))
           setIsEditModalOpen(false)
-        }
+          setSelectedUnidad(null)
+        }}
 
-        unidad={null}
+        unidad={selectedUnidad}
 
       />
 
