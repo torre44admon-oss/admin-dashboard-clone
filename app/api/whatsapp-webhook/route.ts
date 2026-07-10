@@ -42,18 +42,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "No user message in event" })
     }
 
+    const isTestRequest = message.from === "16315551181"
     let senderPhone = message.from // Ej: '573014130109'
     
     // Si es el número de prueba predeterminado de Facebook, redirigir a tu número real para que te llegue el mensaje
-    if (senderPhone === "16315551181") {
+    if (isTestRequest) {
       senderPhone = "573014130109"
     }
 
     const messageText = String(message.text?.body || "").toLowerCase().trim()
 
-    // Solo procesar si dice algo como "hola", "saldo", "deuda", "cobro", "pago", o es el mensaje de prueba de Meta ("test message")
-    const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches", "test message", "test"]
-    const coincide = palabrasClave.some(p => messageText.includes(p))
+    // Solo procesar si dice algo como "hola", "saldo", "deuda", "cobro", "pago", o es una petición de prueba de Meta
+    const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches"]
+    const coincide = isTestRequest || palabrasClave.some(p => messageText.includes(p))
 
     if (!coincide) {
       return NextResponse.json({ success: true, message: "Message ignored (not a key phrase)" })
