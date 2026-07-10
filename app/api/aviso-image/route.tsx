@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "#ffffff",
+            backgroundColor: "#0b0f19",
             padding: "45px",
             fontFamily: "sans-serif",
           }}
@@ -77,8 +77,8 @@ export async function GET(request: NextRequest) {
               flexDirection: "column",
               width: "100%",
               height: "100%",
-              backgroundColor: "#ffffff",
-              border: "1px solid #dfe5ec",
+              backgroundColor: "#151c2c",
+              border: "1px solid #1e293b",
               borderRadius: "30px",
               padding: "50px",
               justifyContent: "space-between",
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "flex-start",
-                  borderBottom: "2px solid #e5e7eb",
+                  borderBottom: "1px solid #2d3748",
                   paddingBottom: "35px",
                   marginBottom: "40px",
                 }}
@@ -101,12 +101,12 @@ export async function GET(request: NextRequest) {
                   {logoSrc ? (
                     <img
                       src={logoSrc}
-                      width={110}
-                      height={110}
+                      width={140}
+                      height={140}
                       style={{
-                        width: "110px",
-                        height: "110px",
-                        borderRadius: "22px",
+                        width: "140px",
+                        height: "140px",
+                        borderRadius: "28px",
                         objectFit: "cover",
                         flexShrink: 0,
                       }}
@@ -116,13 +116,13 @@ export async function GET(request: NextRequest) {
                       style={{
                         background: "#2d4486",
                         color: "#ffffff",
-                        width: "110px",
-                        height: "110px",
-                        borderRadius: "25px",
+                        width: "140px",
+                        height: "140px",
+                        borderRadius: "32px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "40px",
+                        fontSize: "52px",
                         fontWeight: "bold",
                         flexShrink: 0,
                       }}
@@ -131,12 +131,12 @@ export async function GET(request: NextRequest) {
                     </div>
                   )}
 
-                  <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center" }}>
                     <span
                       style={{
-                        fontSize: nombreTorre.length > 15 ? "22px" : "42px",
+                        fontSize: nombreTorre.length > 15 ? "28px" : "42px",
                         fontWeight: "bold",
-                        color: "#1e293b",
+                        color: "#ffffff",
                         margin: 0,
                         wordBreak: "break-word",
                         lineHeight: 1.2,
@@ -146,10 +146,10 @@ export async function GET(request: NextRequest) {
                     </span>
                     <span
                       style={{
-                        color: "#2d4486",
+                        color: "#94a3b8",
                         fontWeight: "bold",
                         marginTop: "8px",
-                        fontSize: "22px",
+                        fontSize: "20px",
                         letterSpacing: "1px",
                       }}
                     >
@@ -161,10 +161,10 @@ export async function GET(request: NextRequest) {
                 {/* Right side: Recuadro */}
                 <div
                   style={{
-                    background: "#f8fafc",
+                    background: "#1e293b",
                     padding: "24px",
                     borderRadius: "22px",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid #2d3748",
                     display: "flex",
                     flexDirection: "column",
                     minWidth: "240px",
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
                     <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: "bold", textTransform: "uppercase", marginBottom: "4px" }}>
                       Fecha de generación:
                     </span>
-                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#1e293b" }}>
+                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#ffffff" }}>
                       {fechaGeneracion}
                     </span>
                   </div>
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
                     <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: "bold", textTransform: "uppercase", marginBottom: "4px" }}>
                       Periodo:
                     </span>
-                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#2d4486" }}>
+                    <span style={{ fontSize: "20px", fontWeight: "bold", color: "#60a5fa" }}>
                       {periodo}
                     </span>
                   </div>
@@ -193,8 +193,8 @@ export async function GET(request: NextRequest) {
               {/* Info Table */}
               <div
                 style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
+                  background: "#1e293b",
+                  border: "1px solid #2d3748",
                   borderRadius: "24px",
                   padding: "35px",
                   marginBottom: "40px",
@@ -204,16 +204,16 @@ export async function GET(request: NextRequest) {
                 }}
               >
                 <div style={{ display: "flex", flexDirection: "column", width: "50%", gap: "16px" }}>
-                  <span style={{ fontSize: "22px", color: "#1e293b" }}>
-                    <strong style={{ fontWeight: "bold" }}>Apartamento:</strong> {unidad}
+                  <span style={{ fontSize: "22px", color: "#94a3b8" }}>
+                    Apartamento: <span style={{ color: "#34d399", fontWeight: "bold" }}>{unidad}</span>
                   </span>
-                  <span style={{ fontSize: "22px", color: "#1e293b" }}>
-                    <strong style={{ fontWeight: "bold" }}>Propietario:</strong> {propietario}
+                  <span style={{ fontSize: "22px", color: "#94a3b8" }}>
+                    Propietario: <span style={{ color: "#ffffff", fontWeight: "bold" }}>{propietario}</span>
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", width: "50%", gap: "16px", alignItems: "flex-end" }}>
                   {direccion && (
-                    <span style={{ fontSize: "18px", color: "#64748b" }}>
+                    <span style={{ fontSize: "18px", color: "#94a3b8" }}>
                       {direccion}
                     </span>
                   )}
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
                 <span
                   style={{
                     fontSize: "16px",
-                    color: "#64748b",
+                    color: "#94a3b8",
                     marginBottom: "14px",
                     letterSpacing: "1px",
                     fontWeight: "bold",
@@ -236,15 +236,15 @@ export async function GET(request: NextRequest) {
 
                 <div
                   style={{
-                    border: "1px solid #dfe5ec",
+                    border: "1px solid #2d3748",
                     borderRadius: "22px",
                     padding: "24px 30px",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     fontSize: "22px",
-                    color: "#1e293b",
-                    backgroundColor: "#ffffff",
+                    color: "#ffffff",
+                    backgroundColor: "#1e293b",
                   }}
                 >
                   <span>Cuota Administrativa</span>
@@ -260,7 +260,7 @@ export async function GET(request: NextRequest) {
                   <span
                     style={{
                       fontSize: "16px",
-                      color: "#64748b",
+                      color: "#94a3b8",
                       marginBottom: "14px",
                       letterSpacing: "1px",
                       fontWeight: "bold",
@@ -271,9 +271,9 @@ export async function GET(request: NextRequest) {
 
                   <div
                     style={{
-                      border: "1px solid #dfe5ec",
+                      border: "1px solid #2d3748",
                       borderRadius: "22px",
-                      backgroundColor: "#ffffff",
+                      backgroundColor: "#1e293b",
                       display: "flex",
                       flexDirection: "column",
                       overflow: "hidden",
@@ -287,9 +287,9 @@ export async function GET(request: NextRequest) {
                           justifyContent: "space-between",
                           alignItems: "center",
                           padding: "22px 30px",
-                          borderBottom: idx !== cargos.length - 1 ? "1px solid #dfe5ec" : "none",
+                          borderBottom: idx !== cargos.length - 1 ? "1px solid #2d3748" : "none",
                           fontSize: "20px",
-                          color: "#1e293b",
+                          color: "#ffffff",
                         }}
                       >
                         <span>{linea.concepto}</span>
@@ -304,23 +304,21 @@ export async function GET(request: NextRequest) {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column" }}>
-              {/* Total Box */}
+              {/* Total Box (Dark themed layout similar to screenshot) */}
               <div
                 style={{
-                  background: "linear-gradient(135deg, #2d4486, #2563eb)",
-                  color: "#ffffff",
-                  borderRadius: "22px",
-                  padding: "24px 30px",
+                  borderTop: "1px solid #2d3748",
+                  paddingTop: "30px",
                   marginBottom: "40px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
                 }}
               >
-                <span style={{ fontSize: "18px", fontWeight: "bold", letterSpacing: "1px" }}>
-                  TOTAL A PAGAR
+                <span style={{ fontSize: "22px", fontWeight: "bold", color: "#ffffff", letterSpacing: "1px" }}>
+                  Total a Pagar
                 </span>
-                <span style={{ fontSize: "48px", fontWeight: "bold" }}>
+                <span style={{ fontSize: "44px", fontWeight: "bold", color: "#34d399" }}>
                   $ {total.toLocaleString("es-CO")}
                 </span>
               </div>
@@ -328,15 +326,15 @@ export async function GET(request: NextRequest) {
               {/* Mensaje Nequi / Pie */}
               <div
                 style={{
-                  background: "#eff6ff",
-                  border: "1px solid #bfdbfe",
+                  background: "#1e293b",
+                  border: "1px solid #2d3748",
                   borderRadius: "22px",
                   padding: "26px",
                   marginBottom: "40px",
                   display: "flex",
                 }}
               >
-                <p style={{ margin: 0, fontSize: "20px", lineHeight: "32px", color: "#1e3a8a" }}>
+                <p style={{ margin: 0, fontSize: "20px", lineHeight: "32px", color: "#94a3b8" }}>
                   {mensajePie}
                 </p>
               </div>
@@ -345,7 +343,7 @@ export async function GET(request: NextRequest) {
               <div
                 style={{
                   textAlign: "center",
-                  borderTop: "2px dashed #cbd5e1",
+                  borderTop: "1px dashed #2d3748",
                   paddingTop: "30px",
                   marginTop: "10px",
                   display: "flex",
@@ -355,7 +353,7 @@ export async function GET(request: NextRequest) {
               >
                 <span
                   style={{
-                    color: "#2d4486",
+                    color: "#60a5fa",
                     fontWeight: "bold",
                     marginBottom: "8px",
                     fontSize: "26px",
@@ -365,7 +363,7 @@ export async function GET(request: NextRequest) {
                 </span>
                 <span
                   style={{
-                    color: "#94a3b8",
+                    color: "#64748b",
                     fontSize: "16px",
                     letterSpacing: "2px",
                     fontWeight: "bold",
@@ -387,3 +385,4 @@ export async function GET(request: NextRequest) {
     return new Response(`Error rendering image: ${error.message}`, { status: 500 })
   }
 }
+
