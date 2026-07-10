@@ -42,11 +42,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "No user message in event" })
     }
 
-    const senderPhone = message.from // Ej: '573014130109'
+    let senderPhone = message.from // Ej: '573014130109'
+    
+    // Si es el número de prueba predeterminado de Facebook, redirigir a tu número real para que te llegue el mensaje
+    if (senderPhone === "16315551181") {
+      senderPhone = "573014130109"
+    }
+
     const messageText = String(message.text?.body || "").toLowerCase().trim()
 
-    // Solo procesar si dice algo como "hola", "saldo", "deuda", "cobro", "pago"
-    const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches"]
+    // Solo procesar si dice algo como "hola", "saldo", "deuda", "cobro", "pago", o es el mensaje de prueba de Meta ("test message")
+    const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches", "test message", "test"]
     const coincide = palabrasClave.some(p => messageText.includes(p))
 
     if (!coincide) {
@@ -234,44 +240,55 @@ export async function POST(request: Request) {
   }
 }
 
-// Funciones Auxiliares para enviar peticiones a Meta API
 async function enviarTextoWhatsApp(to: string, text: string) {
-  await fetch(
-    `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body: text },
-      }),
-    }
-  )
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to,
+          type: "text",
+          text: { body: text },
+        }),
+      }
+    )
+    const data = await res.json()
+    console.log("META TEXT MSG RESPONSE:", res.status, JSON.stringify(data))
+  } catch (err) {
+    console.error("Error calling Meta text API:", err)
+  }
 }
 
 async function enviarImagenWhatsApp(to: string, imageUrl: string, caption: string) {
-  await fetch(
-    `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "image",
-        image: {
-          link: imageUrl,
-          caption,
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
         },
-      }),
-    }
-  )
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to,
+          type: "image",
+          image: {
+            link: imageUrl,
+            caption,
+          },
+        }),
+      }
+    )
+    const data = await res.json()
+    console.log("META IMG MSG RESPONSE:", res.status, JSON.stringify(data))
+  } catch (err) {
+    console.error("Error calling Meta image API:", err)
+  }
 }
