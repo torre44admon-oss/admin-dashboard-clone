@@ -193,46 +193,28 @@ export async function POST(request: Request) {
 
     const total = montoCuota + cargos.reduce((acc, c) => acc + (parseFloat(c.monto) || 0), 0)
 
-    // 4. Generar la imagen del aviso
-    let logoUrl = torreConfig.logo_url || ""
-    const appOrigin = `https://torre44-admon-app.vercel.app`
+    // 4. Construir el estado de cuenta por escrito (texto)
+    let msgText = `👋 *Hola ${u.propietario}* (Apto. ${u.unidad})\n`
+    msgText += `Este es tu estado de cuenta para *${periodoTexto}*:\n\n`
     
-    const queryParams = new URLSearchParams({
-      nombreTorre, logoUrl, periodo: periodoTexto,
-      unidad: u.unidad, propietario: u.propietario,
-      montoCuota: String(montoCuota),
-      cargos: JSON.stringify(cargos),
-      mensajePie: mensajeAviso,
-      direccion
-    })
-
-    const avisoImageUrl = `${appOrigin}/api/aviso-image?${queryParams.toString()}&t=${Date.now()}`
-    let finalImageUrl = avisoImageUrl
-
-    // Descargar y guardar en Supabase Storage para tener URL pública limpia para Meta
-    try {
-      const imgRes = await fetch(avisoImageUrl)
-      if (imgRes.ok) {
-        const imgBuffer = await imgRes.arrayBuffer()
-        const imgBlob = new Blob([imgBuffer], { type: "image/png" })
-        const uniqueName = `aviso-chat-${u.unidad}-${Date.now()}.png`
-
-        const { error: uploadErr } = await supabase.storage
-          .from("avisos")
-          .upload(uniqueName, imgBlob, { contentType: "image/png", upsert: true })
-
-        if (!uploadErr) {
-          const { data: storageUrlData } = supabase.storage.from("avisos").getPublicUrl(uniqueName)
-          finalImageUrl = storageUrlData.publicUrl
-        }
-      }
-    } catch (e) {
-      console.error("Error al procesar la imagen del aviso por webhook:", e)
+    msgText += `• *Cuota Administrativa:* $ ${montoCuota.toLocaleString("es-CO")}\n`
+    
+    if (cargos.length > 0) {
+      msgText += `\n*Cargos adicionales:*\n`
+      cargos.forEach((c: any) => {
+        msgText += `• ${c.concepto}: $ ${Number(c.monto).toLocaleString("es-CO")}\n`
+      })
+    }
+    
+    msgText += `\n------------------------------------\n`
+    msgText += `*TOTAL A PAGAR: $ ${total.toLocaleString("es-CO")}*\n\n`
+    
+    if (mensajeAviso) {
+      msgText += `_${mensajeAviso}_`
     }
 
-    // 5. Responder mensaje de WhatsApp
-    const msgText = `👋 Hola ${u.propietario} (Apto. ${u.unidad}). Le adjunto su aviso de cobro para el periodo ${periodoTexto}.`
-    await enviarImagenWhatsApp(senderPhone, finalImageUrl, msgText)
+    // 5. Responder mensaje de WhatsApp por texto
+    await enviarTextoWhatsApp(senderPhone, msgText)
 
     return NextResponse.json({ success: true, message: "Invoice sent automatically via Chatbot" })
   } catch (error: any) {
