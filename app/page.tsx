@@ -308,8 +308,7 @@ export default function Dashboard() {
 
         {/* COBROS */}
 
-        {(currentPage === "gestion-cobros" ||
-          currentPage === "cobros") && (
+        {currentPage === "gestion-cobros" && (
 
           <CobrosContent />
 
@@ -318,15 +317,13 @@ export default function Dashboard() {
 
         {/* MULTAS */}
 
-        {(currentPage === "gestion-multas" ||
-          currentPage === "multas") && (
+        {currentPage === "gestion-multas" && (
 
           <MultasContent />
 
         )}
 
-        {(currentPage === "gestion-cartera" ||
-  currentPage === "cartera") && (
+        {currentPage === "gestion-cartera" && (
 
   <CarteraContent
     apartamentos={unidades.map((u) => ({
@@ -344,8 +341,7 @@ export default function Dashboard() {
 
         {/* PROYECTOS */}
 
-        {(currentPage === "gestion-proyectos" ||
-          currentPage === "proyectos") && (
+        {currentPage === "gestion-proyectos" && (
 
           <ProyectosContent />
 
@@ -353,8 +349,7 @@ export default function Dashboard() {
 
         {/* CONFIG */}
 
-        {(currentPage === "Configuracion" ||
-          currentPage === "configuracion") && (
+        {currentPage === "configuracion" && (
 
           <ConfiguracionContent />
 
