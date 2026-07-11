@@ -1,4 +1,5 @@
 "use client"
+// Trigger Build 2026-07-11
 
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
