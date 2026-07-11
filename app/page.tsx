@@ -30,7 +30,7 @@ export default function Dashboard() {
   const router = useRouter()
 
   const [currentPage, setCurrentPage] =
-    useState<any>("avisos-cobro")
+    useState<PageType>("resumen")
 
   const [isSidebarOpen, setIsSidebarOpen] =
     useState(false)
