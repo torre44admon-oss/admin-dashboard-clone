@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     // 3. Enviar un mensaje por cada apartamento vinculado al número
     for (const u of unidades) {
       const { data: mensualidades } = await supabase.from("mensualidades").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
-      const { data: multas } = await supabase.from("multas_asignadas").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
+      const { data: multas } = await supabase.from("multas_asignadas").select("*").eq("unidad", u.unidad).in("estado", ["Pendiente", "Vencida"])
       const { data: proyectos } = await supabase.from("proyectos_asignados").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
       const { data: cartera } = await supabase.from("cartera").select("deuda").eq("unidad", u.unidad).single()
       const deudaCartera = Number(cartera?.deuda) || 0

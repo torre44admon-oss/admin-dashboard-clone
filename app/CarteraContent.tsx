@@ -94,13 +94,30 @@ for (const multa of multasVencidas || []) {
         })
     }
 
-    // MARCAR MULTA COMO VENCIDA
+    // REGISTRAR MOVIMIENTO EN HISTORIAL CARTERA
+    const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    await supabase
+      .from("historial_cartera")
+      .insert({
+        unidad: multa.unidad,
+        tipo: "deuda",
+        monto: valorMulta,
+        fecha: hoyStr,
+        saldoResultante: deudaActual + valorMulta
+      })
+
+    // MARCAR MULTA COMO CARGADA EN CARTERA
     await supabase
       .from("multas_asignadas")
-      .update({
-        estado: "Vencida"
-      })
+      .update({ estado: "Cargada" })
       .eq("id", multa.id)
+
+    await supabase
+      .from("portafolio_multas")
+      .update({ estado: "Cargada" })
+      .eq("unidad", multa.unidad)
+      .eq("multa_id", multa.multa_id)
+      .eq("fecha_asignacion", multa.fecha_asignacion)
   }
 }
 

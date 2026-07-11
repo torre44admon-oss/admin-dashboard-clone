@@ -55,7 +55,7 @@ export function RegistrarPagoModal({
         .from("portafolio_multas")
         .select("*")
         .eq("unidad", unidadSeleccionada)
-        .eq("estado", "Pendiente")
+        .in("estado", ["Pendiente", "Vencida"])
 
       if (!error && data) {
         setMultasPendientes(data)
@@ -227,12 +227,20 @@ export function RegistrarPagoModal({
         return
       }
 
-      await supabase
-        .from("proyectos_asignados")
-        .update({
-          estado: "Pagado"
-        })
-        .eq("id", Number(proyectoSeleccionado))
+      const proyectoPortafolio = proyectosPendientes.find(
+        (p) => String(p.id) === proyectoSeleccionado
+      )
+
+      if (proyectoPortafolio) {
+        await supabase
+          .from("proyectos_asignados")
+          .update({
+            estado: "Pagado"
+          })
+          .eq("unidad", proyectoPortafolio.unidad)
+          .eq("proyecto", proyectoPortafolio.proyecto)
+          .eq("fecha", proyectoPortafolio.fecha)
+      }
 
       toast.success("Pago de proyecto registrado correctamente")
       setUnidadSeleccionada("")
@@ -249,15 +257,17 @@ export function RegistrarPagoModal({
       })
       .eq("id", multaSeleccionada)
 
-    const multaAsignadaId = multasPendientes.find(
+    const multaPortafolio = multasPendientes.find(
       (m) => String(m.id) === multaSeleccionada
-    )?.multa_id
+    )
 
-    if (multaAsignadaId) {
+    if (multaPortafolio) {
       await supabase
         .from("multas_asignadas")
         .update({ estado: "Pagado" })
-        .eq("id", Number(multaAsignadaId))
+        .eq("unidad", multaPortafolio.unidad)
+        .eq("multa_id", multaPortafolio.multa_id)
+        .eq("fecha_asignacion", multaPortafolio.fecha_asignacion)
     }
 
     if (error) {

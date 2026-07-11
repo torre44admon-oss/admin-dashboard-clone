@@ -130,27 +130,6 @@ export default function LoginPage() {
     const claveIngresada =
       clave.trim()
 
-    // DEBUG
-
-    console.log(
-      "USUARIO GUARDADO:",
-      usuarioGuardado
-    )
-
-    console.log(
-      "CLAVE GUARDADA:",
-      claveGuardada
-    )
-
-    console.log(
-      "USUARIO INGRESADO:",
-      usuarioIngresado
-    )
-
-    console.log(
-      "CLAVE INGRESADA:",
-      claveIngresada
-    )
 
     // VALIDAR LOGIN
 

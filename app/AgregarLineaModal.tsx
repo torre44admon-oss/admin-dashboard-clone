@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { X } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 interface Props {
   isOpen: boolean
@@ -18,22 +19,20 @@ export function AgregarLineaModal({ isOpen, onClose, onAgregar }: Props) {
 
   useEffect(() => {
     if (isOpen) {
-      const mG = localStorage.getItem("multas_db")
-      if (mG) setListaMultas(JSON.parse(mG))
-      else setListaMultas([{ t: "ruido", m: "$ 35.000" }])
-
-      const pG = localStorage.getItem("proyectos_db") || localStorage.getItem("proyectos")
-      if (pG) {
-        const parsed = JSON.parse(pG)
-        setListaProyectos(parsed.map((p: any) => ({
+      // Cargar multas desde Supabase
+      supabase.from("multas").select("*").then(({ data }) => {
+        setListaMultas((data || []).map((m: any) => ({ t: m.t || "", m: m.m || "$ 0" })))
+      })
+      // Cargar proyectos desde Supabase
+      supabase.from("proyectos").select("*").then(({ data }) => {
+        setListaProyectos((data || []).map((p: any) => ({
           t: p.t || p.titulo || "Proyecto",
-          p: p.p || p.presupuesto || "75.000"
+          p: p.p || p.presupuesto || "0"
         })))
-      } else {
-        setListaProyectos([{ t: "pintura", p: "75.000" }])
-      }
+      })
     }
   }, [isOpen])
+
 
   if (!isOpen) return null
 
@@ -139,10 +138,16 @@ export function AgregarLineaModal({ isOpen, onClose, onAgregar }: Props) {
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Monto</label>
             <input 
-              type="text" 
-              value={monto > 0 ? `$ ${(monto / 1000).toFixed(3)}` : "$ 0.000"} 
-              readOnly 
-              className="w-full border border-slate-100 rounded-xl px-3.5 py-2 text-xs bg-slate-50 text-slate-400 font-semibold outline-none cursor-not-allowed" 
+              type={tipoCargo === "Linea libre" ? "number" : "text"} 
+              value={tipoCargo === "Linea libre" ? (monto || "") : (monto > 0 ? `$ ${monto.toLocaleString("es-CO")}` : "$ 0")} 
+              onChange={tipoCargo === "Linea libre" ? (e) => setMonto(Number(e.target.value)) : undefined}
+              readOnly={tipoCargo !== "Linea libre"} 
+              placeholder="0"
+              className={`w-full border rounded-xl px-3.5 py-2 text-xs font-semibold outline-none ${
+                tipoCargo === "Linea libre"
+                  ? "border-slate-200/80 bg-white text-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  : "border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed"
+              }`} 
               required 
             />
           </div>

@@ -224,11 +224,11 @@ export function MultasContent() {
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                         item.estado === "Pagado"
                           ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : item.estado === "Vencida"
+                          : (item.estado === "Vencida" || item.estado === "Cargada")
                           ? "bg-red-500/10 text-red-400 border-red-500/20"
                           : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                       }`}>
-                        {item.estado}
+                        {item.estado === "Cargada" ? "Vencida (Cartera)" : item.estado}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-300">{item.tipo_multa}</td>
@@ -299,11 +299,11 @@ export function MultasContent() {
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                                   multa.estado === "Pagado"
                                     ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                    : multa.estado === "Vencida"
+                                    : (multa.estado === "Vencida" || multa.estado === "Cargada")
                                     ? "bg-red-500/10 text-red-400 border-red-500/20"
                                     : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                                 }`}>
-                                  {multa.estado}
+                                  {multa.estado === "Cargada" ? "Vencida (Cartera)" : multa.estado}
                                 </span>
                               </td>
                               <td className="px-4 py-4 font-extrabold text-emerald-400">

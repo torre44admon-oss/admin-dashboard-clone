@@ -167,7 +167,7 @@ export function AvisosCobroContent({ apartamentos }: Props) {
               .from("multas_asignadas")
               .select("*")
               .eq("unidad", aptoActual.unidad)
-              .eq("estado", "Pendiente")
+              .in("estado", ["Pendiente", "Vencida"])
             multasData = data
           } catch (err) {
             console.log("Error al consultar multas_asignadas en Supabase:", err)
@@ -473,7 +473,7 @@ const { data: multasPendientes } = await supabase
   .from("multas_asignadas")
   .select("*")
   .eq("unidad", aptoActual.unidad)
-  .eq("estado", "Pendiente")
+  .in("estado", ["Pendiente", "Vencida"])
 for (const multa of multasPendientes || []) {
 
   if (!multa.fecha_asignacion) {
@@ -608,16 +608,27 @@ const fechaLimiteString = mesAviso !== "Todo el año"
       return hoyDate.toISOString().split("T")[0]
     })()
 
-await supabase
+// Verificar si ya existe mensualidad para este mes/año/unidad antes de insertar
+const { data: mensExistente } = await supabase
   .from("mensualidades")
-  .insert([{
-    unidad: aptoActual.unidad,
-    mes: mesAviso,
-    anio: anioAviso,
-    valor: cuotaBase ? cuotaBase.monto : 20000,
-    estado: "Pendiente",
-    fecha_limite: fechaLimiteString
-  }])
+  .select("id")
+  .eq("unidad", aptoActual.unidad)
+  .eq("mes", mesAviso)
+  .eq("anio", anioAviso)
+  .maybeSingle()
+
+if (!mensExistente) {
+  await supabase
+    .from("mensualidades")
+    .insert([{
+      unidad: aptoActual.unidad,
+      mes: mesAviso,
+      anio: anioAviso,
+      valor: cuotaBase ? cuotaBase.monto : 20000,
+      estado: "Pendiente",
+      fecha_limite: fechaLimiteString
+    }])
+}
 
     const plantillaElementId = "plantilla-to-export"
 
@@ -633,7 +644,6 @@ await supabase
       const phoneIntl = formatPhoneForWhatsApp(
         aptoActual.telefono
       )
-console.log("TELEFONO FINAL:", phoneIntl)
       if (!phoneIntl) {
         toast.error("El apartamento no tiene un número válido.")
         return
