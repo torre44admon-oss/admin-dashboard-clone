@@ -135,10 +135,10 @@ export async function GET(request: Request) {
     }
 
     // 6. Construir el reporte línea por línea
-    let mensajeReporte = `*🚨 INFORME DE DEUDORES Y CARTERA 🚨*\n`
+    let mensajeReporte = `*Informe de Deudores y Cartera*\n`
     mensajeReporte += `*Alto de Santa Elena - Condominio*\n`
     mensajeReporte += `Fecha: ${hoyColombia.toLocaleDateString("es-CO")}\n`
-    mensajeReporte += `=============================\n\n`
+    mensajeReporte += `-----------------------------\n\n`
 
     let totalCopropiedad = 0
     let deudoresEncontrados = 0
@@ -195,7 +195,7 @@ export async function GET(request: Request) {
     mensajeReporte += `_Reporte generado de forma automática por el sistema de cartera._`
 
     if (deudoresEncontrados === 0) {
-      mensajeReporte = `*🚨 INFORME DE DEUDORES 🚨*\n*Alto de Santa Elena*\n\nExcelente noticia: A la fecha no existen deudores pendientes en el sistema.`
+      mensajeReporte = `*Informe de Deudores*\n*Alto de Santa Elena*\n\nExcelente noticia: A la fecha no existen deudores pendientes en el sistema.`
     }
 
     // 7. Enviar por API de WhatsApp
