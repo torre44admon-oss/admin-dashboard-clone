@@ -52,9 +52,25 @@ export async function POST(request: Request) {
 
     const messageText = String(message.text?.body || "").toLowerCase().trim()
 
-    // Solo procesar si dice algo como "hola", "saldo", "deuda", "cobro", "pago", o es una petición de prueba de Meta
+    // 1. Obtener el teléfono del administrador para validación de comandos
+    const { data: autoData } = await supabase
+      .from("configuracion_automatico")
+      .select("telefono_reportes")
+      .order("id", { ascending: false })
+      .limit(1)
+    const adminPhoneConfig = autoData?.[0]?.telefono_reportes || ""
+    let adminPhoneClean = String(adminPhoneConfig).replace(/[^0-9]/g, "")
+    if (adminPhoneClean.length === 10 && !adminPhoneClean.startsWith("57")) {
+      adminPhoneClean = "57" + adminPhoneClean
+    }
+    const isAdmin = senderPhone === adminPhoneClean || senderPhone === "573014130109"
+
+    // 2. Verificar palabras clave o comandos de administrador
     const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches"]
-    const coincide = isTestRequest || palabrasClave.some(p => messageText.includes(p))
+    const coincidePalabra = palabrasClave.some(p => messageText.includes(p))
+    const isAdminCommand = messageText === "reporte" || messageText === "informe" || /^(enviar|aviso|cobro)\s+([0-9a-zA-Z-]+)$/.test(messageText)
+
+    const coincide = isTestRequest || coincidePalabra || (isAdmin && isAdminCommand)
 
     if (!coincide) {
       return NextResponse.json({ success: true, message: "Message ignored (not a key phrase)" })
@@ -63,6 +79,50 @@ export async function POST(request: Request) {
     // Programar el procesamiento y envío de WhatsApp en segundo plano (para no hacer esperar a Facebook)
     after(async () => {
       try {
+        const origin = new URL(request.url).origin
+
+        // Procesar comandos de Administrador
+        if (isAdmin && isAdminCommand) {
+          // Comando de Reporte Completo
+          if (messageText === "reporte" || messageText === "informe") {
+            try {
+              await enviarTextoWhatsApp(senderPhone, "⏳ Generando y enviando informe completo de deudores...")
+              const res = await fetch(`${origin}/api/cron-report?manual=true`)
+              const data = await res.json()
+              if (data.success) {
+                await enviarTextoWhatsApp(senderPhone, `✅ Informe generado con éxito. Se encontraron ${data.deudores} deudores en mora.`)
+              } else {
+                await enviarTextoWhatsApp(senderPhone, `❌ Error al generar el reporte: ${data.error || "Error de API"}`)
+              }
+            } catch (err: any) {
+              await enviarTextoWhatsApp(senderPhone, `❌ Error de conexión al generar reporte: ${err.message}`)
+            }
+            return
+          }
+
+          // Comando de Envío Individual: "enviar 101" / "aviso 101" / "cobro 101"
+          const match = messageText.match(/^(enviar|aviso|cobro)\s+([0-9a-zA-Z-]+)$/)
+          if (match) {
+            const unidadId = match[2].toUpperCase()
+            try {
+              await enviarTextoWhatsApp(senderPhone, `⏳ Procesando y enviando aviso de cobro al Apto. ${unidadId}...`)
+              const res = await fetch(`${origin}/api/cron-aviso?unidad=${unidadId}&manual=true`)
+              const data = await res.json()
+              const resultado = data.resultados?.[0]
+              if (data.success && resultado && resultado.success) {
+                await enviarTextoWhatsApp(senderPhone, `✅ ¡Enviado con éxito! El aviso de cobro del Apto. ${unidadId} se envió a su teléfono registrado (${resultado.telefono}).`)
+              } else {
+                const errorMsg = resultado?.error || data.error || "El apartamento no existe o no tiene un teléfono válido registrado."
+                await enviarTextoWhatsApp(senderPhone, `❌ Error al enviar aviso al Apto. ${unidadId}: ${errorMsg}`)
+              }
+            } catch (err: any) {
+              await enviarTextoWhatsApp(senderPhone, `❌ Error de conexión al enviar el aviso: ${err.message}`)
+            }
+            return
+          }
+        }
+
+        // Flujo estándar para propietarios (consultar saldo individual)
         // 1. Buscar TODOS los apartamentos asociados al número del remitente
         const phoneNoCountry = senderPhone.startsWith("57") ? senderPhone.substring(2) : senderPhone
         const { data: unidades, error: errUnidades } = await supabase
