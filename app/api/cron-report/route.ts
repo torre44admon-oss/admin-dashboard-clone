@@ -51,16 +51,19 @@ export async function GET(request: Request) {
         if (horaHoy === (schedHour !== undefined ? schedHour : 8) && telefonoDestino) {
           try {
             const origin = new URL(request.url).origin
-            let telefonoClean = String(telefonoDestino).replace(/[^0-9]/g, "")
-            if (telefonoClean.length === 10 && !telefonoClean.startsWith("57")) {
-              telefonoClean = "57" + telefonoClean
-            }
-            if (telefonoClean) {
+            const pingsDestinations = String(telefonoDestino).split(/[,;]+/).map((p: string) => {
+              let clean = p.replace(/[^0-9]/g, "")
+              if (clean.length === 10 && !clean.startsWith("57")) {
+                clean = "57" + clean
+              }
+              return clean
+            }).filter(Boolean)
+            for (const phone of pingsDestinations) {
               await fetch(`${origin}/api/whatsapp`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  telefono: telefonoClean,
+                  telefono: phone,
                   mensaje: `⚙️ Conexión Activa Torre Admin: El sistema está en línea y funcionando hoy ${diaHoy}/${hoyColombia.getMonth() + 1}.`
                 })
               })
@@ -198,34 +201,46 @@ export async function GET(request: Request) {
       mensajeReporte = `*Informe de Deudores*\n*Alto de Santa Elena*\n\nExcelente noticia: A la fecha no existen deudores pendientes en el sistema.`
     }
 
-    // 7. Enviar por API de WhatsApp
-    let destinationPhone = String(telefonoDestino).replace(/[^0-9]/g, "")
-    if (destinationPhone.length === 10 && !destinationPhone.startsWith("57")) {
-      destinationPhone = "57" + destinationPhone
+    // 7. Enviar por API de WhatsApp a todos los destinatarios configurados
+    const destinationPhones = String(telefonoDestino).split(/[,;]+/).map((p: string) => {
+      let clean = p.replace(/[^0-9]/g, "")
+      if (clean.length === 10 && !clean.startsWith("57")) {
+        clean = "57" + clean
+      }
+      return clean
+    }).filter(Boolean)
+
+    const results = []
+    for (const phone of destinationPhones) {
+      try {
+        const response = await fetch(
+          `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: phone,
+              type: "text",
+              text: {
+                body: mensajeReporte
+              }
+            })
+          }
+        )
+        const responseData = await response.json()
+        results.push({ phone, ok: response.ok, data: responseData })
+      } catch (err: any) {
+        results.push({ phone, ok: false, error: err.message })
+      }
     }
 
-    const response = await fetch(
-      `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: destinationPhone,
-          type: "text",
-          text: {
-            body: mensajeReporte
-          }
-        })
-      }
-    )
+    const anySuccess = results.some(r => r.ok)
 
-    const responseData = await response.json()
-
-    if (response.ok && !isManual) {
+    if (anySuccess && !isManual) {
       const fechaHoyString = `${hoyColombia.getFullYear()}-${hoyColombia.getMonth() + 1}-${hoyColombia.getDate()}`
       await supabase
         .from("configuracion_automatico")
@@ -234,11 +249,11 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      success: response.ok,
-      destinatario: telefonoDestino,
+      success: anySuccess,
+      destinatarios: destinationPhones,
       deudores: deudoresEncontrados,
       total_cartera: totalCopropiedad,
-      whatsapp_response: responseData
+      results
     })
 
   } catch (error: any) {

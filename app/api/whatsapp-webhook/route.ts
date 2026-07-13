@@ -52,18 +52,21 @@ export async function POST(request: Request) {
 
     const messageText = String(message.text?.body || "").toLowerCase().trim()
 
-    // 1. Obtener el teléfono del administrador para validación de comandos
+    // 1. Obtener los teléfonos de administradores (adm, tesorera) para validación de comandos
     const { data: autoData } = await supabase
       .from("configuracion_automatico")
       .select("telefono_reportes")
       .order("id", { ascending: false })
       .limit(1)
     const adminPhoneConfig = autoData?.[0]?.telefono_reportes || ""
-    let adminPhoneClean = String(adminPhoneConfig).replace(/[^0-9]/g, "")
-    if (adminPhoneClean.length === 10 && !adminPhoneClean.startsWith("57")) {
-      adminPhoneClean = "57" + adminPhoneClean
-    }
-    const isAdmin = senderPhone === adminPhoneClean || senderPhone === "573014130109"
+    const adminPhones = adminPhoneConfig.split(/[,;]+/).map((p: string) => {
+      let clean = p.replace(/[^0-9]/g, "")
+      if (clean.length === 10 && !clean.startsWith("57")) {
+        clean = "57" + clean
+      }
+      return clean
+    }).filter(Boolean)
+    const isAdmin = adminPhones.includes(senderPhone) || senderPhone === "573014130109"
 
     // 2. Verificar palabras clave o comandos de administrador
     const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches"]
