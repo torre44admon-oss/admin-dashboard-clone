@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     // 2. Verificar palabras clave o comandos de administrador
     const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches"]
     const coincidePalabra = palabrasClave.some(p => messageText.includes(p))
-    const isAdminCommand = messageText === "reporte" || messageText === "informe" || /^(enviar|aviso|cobro)\s+([0-9a-zA-Z-]+)$/.test(messageText)
+    const isAdminCommand = messageText === "reporte" || messageText === "informe" || /^(enviar|envia|envie|aviso|cobro)\s+([0-9a-zA-Z-]+)$/.test(messageText)
 
     const coincide = isTestRequest || coincidePalabra || (isAdmin && isAdminCommand)
 
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
           }
 
           // Comando de Envío Individual: "enviar 101" / "aviso 101" / "cobro 101"
-          const match = messageText.match(/^(enviar|aviso|cobro)\s+([0-9a-zA-Z-]+)$/)
+          const match = messageText.match(/^(enviar|envia|envie|aviso|cobro)\s+([0-9a-zA-Z-]+)$/)
           if (match) {
             const unidadId = match[2].toUpperCase()
             try {
