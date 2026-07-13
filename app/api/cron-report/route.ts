@@ -201,7 +201,7 @@ export async function GET(request: Request) {
       mensajeReporte = `*Informe de Deudores*\n*Alto de Santa Elena*\n\nExcelente noticia: A la fecha no existen deudores pendientes en el sistema.`
     }
 
-    // 7. Enviar por API de WhatsApp a todos los destinatarios configurados
+    // 7. Enviar por API de WhatsApp a los destinatarios autorizados
     const destinationPhones = String(telefonoDestino).split(/[,;]+/).map((p: string) => {
       let clean = p.replace(/[^0-9]/g, "")
       if (clean.length === 10 && !clean.startsWith("57")) {
@@ -210,8 +210,13 @@ export async function GET(request: Request) {
       return clean
     }).filter(Boolean)
 
+    // Si es el envío automático programado (no manual ni disparado por comando), solo se le envía al primer número de la lista (tú)
+    const phonesToSend = (!isManual && destinationPhones.length > 0)
+      ? [destinationPhones[0]]
+      : destinationPhones
+
     const results = []
-    for (const phone of destinationPhones) {
+    for (const phone of phonesToSend) {
       try {
         const response = await fetch(
           `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,

@@ -90,7 +90,7 @@ export async function POST(request: Request) {
           if (messageText === "reporte" || messageText === "informe") {
             try {
               await enviarTextoWhatsApp(senderPhone, "⏳ Generando y enviando informe completo de deudores...")
-              const res = await fetch(`${origin}/api/cron-report?manual=true`)
+              const res = await fetch(`${origin}/api/cron-report?manual=true&telefono=${senderPhone}`)
               const data = await res.json()
               if (data.success) {
                 await enviarTextoWhatsApp(senderPhone, `✅ Informe generado con éxito. Se encontraron ${data.deudores} deudores en mora.`)
