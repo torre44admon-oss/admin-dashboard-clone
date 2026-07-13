@@ -59,14 +59,42 @@ export async function POST(request: Request) {
       .order("id", { ascending: false })
       .limit(1)
     const adminPhoneConfig = autoData?.[0]?.telefono_reportes || ""
-    const adminPhones = adminPhoneConfig.split(/[,;]+/).map((p: string) => {
-      let clean = p.replace(/[^0-9]/g, "")
-      if (clean.length === 10 && !clean.startsWith("57")) {
-        clean = "57" + clean
+    
+    let adminPhones: string[] = []
+    let commandPhones: string[] = []
+    
+    try {
+      if (adminPhoneConfig.startsWith("[")) {
+        const parsed = JSON.parse(adminPhoneConfig) as { phone: string; reports: boolean; commands: boolean }[]
+        parsed.forEach(item => {
+          let clean = String(item.phone || "").replace(/[^0-9]/g, "")
+          if (clean.length === 10 && !clean.startsWith("57")) {
+            clean = "57" + clean
+          }
+          if (clean) {
+            adminPhones.push(clean)
+            if (item.commands) {
+              commandPhones.push(clean)
+            }
+          }
+        })
+      } else {
+        const oldPhones = adminPhoneConfig.split(/[,;]+/)
+        oldPhones.forEach((p: string) => {
+          let clean = p.replace(/[^0-9]/g, "")
+          if (clean.length === 10 && !clean.startsWith("57")) {
+            clean = "57" + clean
+          }
+          if (clean) {
+            adminPhones.push(clean)
+            commandPhones.push(clean)
+          }
+        })
       }
-      return clean
-    }).filter(Boolean)
-    const isAdmin = adminPhones.includes(senderPhone) || senderPhone === "573014130109"
+    } catch (e) {
+      console.error("Error al parsear teléfonos de administradores:", e)
+    }
+    const isAdmin = commandPhones.includes(senderPhone) || senderPhone === "573014130109"
 
     // 2. Verificar palabras clave o comandos de administrador
     const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches"]

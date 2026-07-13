@@ -1,6 +1,40 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 
+function parseDestinations(telefonoDestino: string, filterReports: boolean): string[] {
+  let destinations: string[] = []
+  try {
+    if (telefonoDestino.startsWith("[")) {
+      const parsed = JSON.parse(telefonoDestino) as { phone: string; reports: boolean; commands: boolean }[]
+      parsed.forEach(item => {
+        let clean = String(item.phone || "").replace(/[^0-9]/g, "")
+        if (clean.length === 10 && !clean.startsWith("57")) {
+          clean = "57" + clean
+        }
+        if (clean) {
+          if (!filterReports || item.reports) {
+            destinations.push(clean)
+          }
+        }
+      })
+    } else {
+      const oldPhones = telefonoDestino.split(/[,;]+/)
+      oldPhones.forEach((p: string) => {
+        let clean = p.replace(/[^0-9]/g, "")
+        if (clean.length === 10 && !clean.startsWith("57")) {
+          clean = "57" + clean
+        }
+        if (clean) {
+          destinations.push(clean)
+        }
+      })
+    }
+  } catch (e) {
+    console.error("Error al parsear teléfonos de destino:", e)
+  }
+  return destinations
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -51,13 +85,7 @@ export async function GET(request: Request) {
         if (horaHoy === (schedHour !== undefined ? schedHour : 8) && telefonoDestino) {
           try {
             const origin = new URL(request.url).origin
-            const pingsDestinations = String(telefonoDestino).split(/[,;]+/).map((p: string) => {
-              let clean = p.replace(/[^0-9]/g, "")
-              if (clean.length === 10 && !clean.startsWith("57")) {
-                clean = "57" + clean
-              }
-              return clean
-            }).filter(Boolean)
+            const pingsDestinations = parseDestinations(telefonoDestino, false)
             for (const phone of pingsDestinations) {
               await fetch(`${origin}/api/whatsapp`, {
                 method: "POST",
@@ -202,18 +230,9 @@ export async function GET(request: Request) {
     }
 
     // 7. Enviar por API de WhatsApp a los destinatarios autorizados
-    const destinationPhones = String(telefonoDestino).split(/[,;]+/).map((p: string) => {
-      let clean = p.replace(/[^0-9]/g, "")
-      if (clean.length === 10 && !clean.startsWith("57")) {
-        clean = "57" + clean
-      }
-      return clean
-    }).filter(Boolean)
-
-    // Si es el envío automático programado (no manual ni disparado por comando), solo se le envía al primer número de la lista (tú)
-    const phonesToSend = (!isManual && destinationPhones.length > 0)
-      ? [destinationPhones[0]]
-      : destinationPhones
+    // (Si es automático mensual, filtramos solo los números que tienen activo el check de reportes. Si es manual, se envían todos los destinatarios solicitados)
+    const destinationPhones = parseDestinations(telefonoDestino, !isManual)
+    const phonesToSend = destinationPhones
 
     const results = []
     for (const phone of phonesToSend) {

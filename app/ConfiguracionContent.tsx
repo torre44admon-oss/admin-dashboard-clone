@@ -34,6 +34,9 @@ export function ConfiguracionContent() {
   const [diasVencimientoMulta, setDiasVencimientoMulta] = useState("15")
   const [diasVencimientoProyecto, setDiasVencimientoProyecto] = useState("30")
   const [telefonoReportes, setTelefonoReportes] = useState("")
+  const [admins, setAdmins] = useState<{ phone: string; reports: boolean; commands: boolean }[]>([
+    { phone: "", reports: true, commands: true }
+  ])
   const [diaReporteAutomatico, setDiaReporteAutomatico] = useState("28")
   
   // States para el Time Picker del Informe
@@ -161,7 +164,18 @@ export function ConfiguracionContent() {
     if (diasProyectoGuardado) setDiasVencimientoProyecto(diasProyectoGuardado)
     if (ibcGuardado) setIbcAnual(ibcGuardado)
     if (multiplicadorGuardado) setMultiplicadorMora(multiplicadorGuardado)
-    if (telReportesGuardado) setTelefonoReportes(telReportesGuardado)
+    if (telReportesGuardado) {
+      setTelefonoReportes(telReportesGuardado)
+      try {
+        if (telReportesGuardado.startsWith("[")) {
+          setAdmins(JSON.parse(telReportesGuardado))
+        } else {
+          setAdmins([{ phone: telReportesGuardado, reports: true, commands: true }])
+        }
+      } catch (e) {
+        setAdmins([{ phone: telReportesGuardado, reports: true, commands: true }])
+      }
+    }
     if (diaReporteGuardado) setDiaReporteAutomatico(diaReporteGuardado)
     if (horaReporteGuardado) {
       const parsed = convertirDesde24h(horaReporteGuardado)
@@ -233,7 +247,20 @@ export function ConfiguracionContent() {
           .limit(1)
         if (autoDatos && autoDatos.length > 0) {
           const r = autoDatos[0]
-          if (r.telefono_reportes != null) { setTelefonoReportes(String(r.telefono_reportes)); localStorage.setItem("telefono_reportes", String(r.telefono_reportes)) }
+          if (r.telefono_reportes != null) { 
+            const rawTel = String(r.telefono_reportes)
+            setTelefonoReportes(rawTel)
+            localStorage.setItem("telefono_reportes", rawTel)
+            try {
+              if (rawTel.startsWith("[")) {
+                setAdmins(JSON.parse(rawTel))
+              } else {
+                setAdmins([{ phone: rawTel, reports: true, commands: true }])
+              }
+            } catch (e) {
+              setAdmins([{ phone: rawTel, reports: true, commands: true }])
+            }
+          }
           if (r.dia_reporte_automatico != null) { setDiaReporteAutomatico(String(r.dia_reporte_automatico)); localStorage.setItem("dia_reporte_automatico", String(r.dia_reporte_automatico)) }
           if (r.hora_reporte_automatico != null) { const p = convertirDesde24h(String(r.hora_reporte_automatico)); setHoraRep(p.h); setMinutoRep(p.m); setPeriodoRep(p.p); localStorage.setItem("hora_reporte_automatico", String(r.hora_reporte_automatico)) }
           if (r.envio_automatico_avisos != null) { setEnvioAutomaticoAvisos(Boolean(r.envio_automatico_avisos)); localStorage.setItem("envio_automatico_avisos", String(r.envio_automatico_avisos)) }
@@ -392,9 +419,10 @@ export function ConfiguracionContent() {
 
       // configuracion_automatico
       const { data: autoExist } = await supabase.from("configuracion_automatico").select("id").order("id", { ascending: false }).limit(1)
+      const adminsJson = JSON.stringify(admins)
       if (autoExist && autoExist.length > 0) {
         await supabase.from("configuracion_automatico").update({
-          telefono_reportes: telefonoReportes,
+          telefono_reportes: adminsJson,
           dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
           hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
           envio_automatico_avisos: envioAutomaticoAvisos,
@@ -403,7 +431,7 @@ export function ConfiguracionContent() {
         }).eq("id", autoExist[0].id)
       } else {
         await supabase.from("configuracion_automatico").insert({
-          telefono_reportes: telefonoReportes,
+          telefono_reportes: adminsJson,
           dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
           hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
           envio_automatico_avisos: envioAutomaticoAvisos,
@@ -411,6 +439,8 @@ export function ConfiguracionContent() {
           hora_envio_avisos: convertirA24h(horaAvi, minutoAvi, periodoAvi)
         })
       }
+      setTelefonoReportes(adminsJson)
+      localStorage.setItem("telefono_reportes", adminsJson)
 
       toast.success("Configuración guardada y sincronizada con Supabase.")
     } catch (err) {
@@ -425,13 +455,14 @@ export function ConfiguracionContent() {
 
   // ENVIAR REPORTE DE DEUDORES POR WHATSAPP AHORA
   const enviarReporteDeudoresAhora = async () => {
-    if (!telefonoReportes) {
-      toast.error("Por favor, configure primero el teléfono del administrador.")
+    const reportAdmin = admins.find(a => a.reports && a.phone) || admins.find(a => a.phone)
+    if (!reportAdmin || !reportAdmin.phone) {
+      toast.error("Por favor, configure primero un teléfono del administrador.")
       return
     }
     setEnviandoReporte(true)
     try {
-      const res = await fetch(`/api/cron-report?manual=true&telefono=${telefonoReportes}`)
+      const res = await fetch(`/api/cron-report?manual=true&telefono=${reportAdmin.phone}`)
       const data = await res.json()
       if (res.ok && data.success) {
         toast.success(`¡Informe de deudores enviado con éxito por WhatsApp a ${data.destinatario}!`)
@@ -1034,17 +1065,87 @@ export function ConfiguracionContent() {
           {showReportConfig && (
             <div className="space-y-4 pt-5 border-t border-[#1E293B]/20 mt-5 animate-[fadeIn_0.2s_ease-out]">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">
-                  Teléfono del Admin (WhatsApp)
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-2.5">
+                  Números de Teléfono Autorizados (WhatsApp)
                 </label>
-                <input
-                  type="text"
-                  placeholder="Ej: 573000000000"
-                  value={telefonoReportes}
-                  onChange={(e) => setTelefonoReportes(e.target.value)}
-                  className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
-                />
-                <span className="text-[10px] text-slate-500 block mt-1">
+                <div className="space-y-3">
+                  {admins.map((adm, index) => (
+                    <div 
+                      key={index} 
+                      className="bg-[#182030] border border-[#2E3A52]/40 rounded-2xl p-4 space-y-3 animate-[fadeIn_0.2s_ease-out]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            placeholder="Ej: 573000000000"
+                            value={adm.phone}
+                            onChange={(e) => {
+                              const newAdmins = [...admins]
+                              newAdmins[index].phone = e.target.value
+                              setAdmins(newAdmins)
+                            }}
+                            className="w-full bg-[#111622] border border-[#1E293B]/80 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
+                          />
+                        </div>
+                        {admins.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newAdmins = admins.filter((_, i) => i !== index)
+                              setAdmins(newAdmins)
+                            }}
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-xl border border-red-500/20 transition-all cursor-pointer flex items-center justify-center shrink-0"
+                            title="Eliminar número"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 pt-1.5 border-t border-[#1E293B]/30">
+                        <label className="flex items-center gap-2 text-[11px] text-slate-400 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={adm.reports}
+                            onChange={(e) => {
+                              const newAdmins = [...admins]
+                              newAdmins[index].reports = e.target.checked
+                              setAdmins(newAdmins)
+                            }}
+                            className="rounded border-[#1E293B]/80 bg-[#111622] text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                          />
+                          Recibir Reporte Automático
+                        </label>
+
+                        <label className="flex items-center gap-2 text-[11px] text-slate-400 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={adm.commands}
+                            onChange={(e) => {
+                              const newAdmins = [...admins]
+                              newAdmins[index].commands = e.target.checked
+                              setAdmins(newAdmins)
+                            }}
+                            className="rounded border-[#1E293B]/80 bg-[#111622] text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                          />
+                          Permitir Comandos WhatsApp
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdmins([...admins, { phone: "", reports: false, commands: true }])
+                  }}
+                  className="w-full border border-dashed border-[#2E3A52]/60 hover:border-blue-500/50 text-[#94A3B8] hover:text-blue-400 font-semibold py-2.5 rounded-xl text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 mt-3 bg-blue-500/5"
+                >
+                  ➕ Agregar número autorizado
+                </button>
+                <span className="text-[10px] text-slate-500 block mt-2 text-center">
                   Código de país sin el signo + (Ej: 57 para Colombia)
                 </span>
               </div>
