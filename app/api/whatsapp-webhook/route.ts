@@ -137,14 +137,14 @@ export async function POST(request: Request) {
             const unidadId = match[2].toUpperCase()
             try {
               await enviarTextoWhatsApp(senderPhone, `⏳ Procesando y enviando aviso de cobro al Apto. ${unidadId}...`)
-              const res = await fetch(`${origin}/api/cron-aviso?unidad=${unidadId}&manual=true`)
+              const res = await fetch(`${origin}/api/cron-aviso?unidad=${unidadId}&manual=true&telefono=${senderPhone}`)
               const data = await res.json()
               const resultado = data.resultados?.[0]
               if (data.success && resultado && resultado.success) {
-                await enviarTextoWhatsApp(senderPhone, `✅ ¡Enviado con éxito! El aviso de cobro del Apto. ${unidadId} se envió a su teléfono registrado (${resultado.telefono}).`)
+                await enviarTextoWhatsApp(senderPhone, `✅ ¡Generado con éxito! Aquí tiene el aviso de cobro del Apto. ${unidadId}.`)
               } else {
-                const errorMsg = resultado?.error || data.error || "El apartamento no existe o no tiene un teléfono válido registrado."
-                await enviarTextoWhatsApp(senderPhone, `❌ Error al enviar aviso al Apto. ${unidadId}: ${errorMsg}`)
+                const errorMsg = resultado?.error || data.error || "El apartamento no existe o no tiene un formato válido."
+                await enviarTextoWhatsApp(senderPhone, `❌ Error al generar el aviso al Apto. ${unidadId}: ${errorMsg}`)
               }
             } catch (err: any) {
               await enviarTextoWhatsApp(senderPhone, `❌ Error de conexión al enviar el aviso: ${err.message}`)

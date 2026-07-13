@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const isManual = searchParams.get("manual") === "true"
     const singleUnidad = searchParams.get("unidad")
+    const forceTelefono = searchParams.get("telefono")
 
     // 1. Obtener configuración automática (horarios, activación)
     const { data: autoData, error: autoError } = await supabase
@@ -147,7 +148,9 @@ export async function GET(request: Request) {
 
     for (const u of unidades) {
       try {
-        let telefonoClean = String(u.telefono || "").replace(/[^0-9]/g, "")
+        let telefonoClean = forceTelefono 
+          ? String(forceTelefono).replace(/[^0-9]/g, "")
+          : String(u.telefono || "").replace(/[^0-9]/g, "")
         if (telefonoClean.length === 10 && !telefonoClean.startsWith("57")) telefonoClean = "57" + telefonoClean
         if (!telefonoClean) {
           resultados.push({ unidad: u.unidad, success: false, error: "No tiene número de teléfono" })
