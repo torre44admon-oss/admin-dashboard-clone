@@ -155,7 +155,7 @@ export async function GET(request: Request) {
           continue
         }
 
-        const { data: mensualidades } = await supabase.from("mensualidades").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
+        let { data: mensualidades } = await supabase.from("mensualidades").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
         const { data: multas } = await supabase.from("multas_asignadas").select("*").eq("unidad", u.unidad).in("estado", ["Pendiente", "Vencida"])
         const { data: proyectos } = await supabase.from("proyectos_asignados").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
         const { data: cartera } = await supabase.from("cartera").select("deuda").eq("unidad", u.unidad).single()
@@ -165,9 +165,44 @@ export async function GET(request: Request) {
         const startOfToday = new Date(hoyColombia)
         startOfToday.setHours(0, 0, 0, 0)
 
-        const mensualidadVigente = mensualidades?.find(
-          (m: any) => String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
-        )
+        // Verificar si ya existe mensualidad para este mes/año/unidad en la BD (sea Pagada o Pendiente)
+        const { data: mensExistente } = await supabase
+          .from("mensualidades")
+          .select("*")
+          .eq("unidad", u.unidad)
+          .eq("mes", mesVigente)
+          .eq("anio", anoVigente)
+          .maybeSingle()
+
+        let mensualidadVigente = mensExistente
+        if (!mensExistente) {
+          const diaLimite = configMora.dia_limite_pago || 5
+          const fechaLimiteObj = new Date(anoVigente, fechaCiclo.getMonth(), diaLimite)
+          const fechaLimiteString = `${fechaLimiteObj.getFullYear()}-${String(fechaLimiteObj.getMonth() + 1).padStart(2, '0')}-${String(fechaLimiteObj.getDate()).padStart(2, '0')}`
+
+          const { data: newMens, error: errNew } = await supabase
+            .from("mensualidades")
+            .insert([{
+              unidad: u.unidad,
+              mes: mesVigente,
+              anio: anoVigente,
+              valor: montoFijoBase || 120000,
+              estado: "Pendiente",
+              fecha_limite: fechaLimiteString
+            }])
+            .select()
+            .single()
+
+          if (!errNew && newMens) {
+            mensualidadVigente = newMens
+            if (mensualidades) {
+              mensualidades.push(newMens)
+            } else {
+              mensualidades = [newMens]
+            }
+          }
+        }
+
         const montoCuota = mensualidadVigente ? parseFloat(mensualidadVigente.valor) : (montoFijoBase || 120000)
 
         if (mensualidades) {
