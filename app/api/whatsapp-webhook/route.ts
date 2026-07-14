@@ -192,9 +192,7 @@ export async function POST(request: Request) {
 
         const mesesNombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
         const hoyColombia = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }))
-        const fechaCiclo = hoyColombia.getDate() > 20
-          ? new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1)
-          : hoyColombia
+        const fechaCiclo = new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1)
         const mesVigente = mesesNombres[fechaCiclo.getMonth()]
         const anoVigente = fechaCiclo.getFullYear()
         const periodoTexto = `${mesVigente} de ${anoVigente}`

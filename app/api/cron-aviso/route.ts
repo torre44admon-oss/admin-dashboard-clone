@@ -136,9 +136,7 @@ export async function GET(request: Request) {
 
     // Mes y año del ciclo de cobro
     const mesesNombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
-    const fechaCiclo = hoyColombia.getDate() > 20
-      ? new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1)
-      : hoyColombia
+    const fechaCiclo = new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1)
     const mesVigente = mesesNombres[fechaCiclo.getMonth()]
     const anoVigente = fechaCiclo.getFullYear()
     const periodoTexto = `${mesVigente} de ${anoVigente}`
