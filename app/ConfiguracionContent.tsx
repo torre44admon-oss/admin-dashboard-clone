@@ -92,6 +92,8 @@ export function ConfiguracionContent() {
 
   const [enviandoReporte, setEnviandoReporte] = useState(false)
   const [enviandoAvisos, setEnviandoAvisos] = useState(false)
+  const [cargandoRespaldo, setCargandoRespaldo] = useState(false)
+  const [cargandoExcel, setCargandoExcel] = useState(false)
 
   const enviarAvisosAhora = async () => {
     setEnviandoAvisos(true)
@@ -477,76 +479,213 @@ export function ConfiguracionContent() {
     }
   }
 
-  // EXPORTAR RESPALDO JSON
-  const exportarDatos = () => {
-    const keys = [
-      "nombre_torre",
-      "logo_url",
-      "direccion_torre",
-      "monto_fijo",
-      "moneda",
-      "nombre_cuota",
-      "mensaje_aviso",
-      "ruta_carpeta",
-      "login_activo",
-      "torre_admin_password",
-      "apartamentos",
-      "unidades",
-      "multas",
-      "portafolio_multas",
-      "historial_multas",
-      "proyectos",
-      "proyectos_asignados",
-      "cobros",
-      "cartera",
-      "historial_cartera",
-      "tasa_mora",
-      "dia_pago_cuota",
-      "dias_vencimiento_multa",
-      "dias_vencimiento_proyecto",
-      "ibc_anual",
-      "multiplicador_mora"
-    ]
-    const data: Record<string, string | null> = {}
-    keys.forEach(k => {
-      data[k] = localStorage.getItem(k)
-    })
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `respaldo-${nombreTorre.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    toast.success("Respaldo exportado correctamente")
+  // EXPORTAR RESPALDO JSON DESDE SUPABASE
+  const exportarDatos = async () => {
+    setCargandoRespaldo(true)
+    try {
+      const [
+        torreRes,
+        avisoRes,
+        autoRes,
+        tasasRes,
+        unidadesRes,
+        mensualidadesRes,
+        multasRes,
+        proyectosRes,
+        carteraRes
+      ] = await Promise.all([
+        supabase.from("configuracion_torre").select("*"),
+        supabase.from("configuracion_aviso").select("*"),
+        supabase.from("configuracion_automatico").select("*"),
+        supabase.from("configuracion_tasas_mora").select("*"),
+        supabase.from("unidades").select("*"),
+        supabase.from("mensualidades").select("*"),
+        supabase.from("multas_asignadas").select("*"),
+        supabase.from("proyectos_asignados").select("*"),
+        supabase.from("cartera").select("*")
+      ])
+
+      if (
+        torreRes.error || avisoRes.error || autoRes.error || tasasRes.error ||
+        unidadesRes.error || mensualidadesRes.error || multasRes.error ||
+        proyectosRes.error || carteraRes.error
+      ) {
+        throw new Error("Error al consultar datos desde Supabase")
+      }
+
+      const dataBackup = {
+        configuracion_torre: torreRes.data || [],
+        configuracion_aviso: avisoRes.data || [],
+        configuracion_automatico: autoRes.data || [],
+        configuracion_tasas_mora: tasasRes.data || [],
+        unidades: unidadesRes.data || [],
+        mensualidades: mensualidadesRes.data || [],
+        multas_asignadas: multasRes.data || [],
+        proyectos_asignados: proyectosRes.data || [],
+        cartera: carteraRes.data || []
+      }
+
+      const blob = new Blob([JSON.stringify(dataBackup, null, 2)], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `respaldo-completo-${nombreTorre.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success("Respaldo completo exportado de Supabase con éxito")
+    } catch (err: any) {
+      console.error(err)
+      toast.error(`Error al exportar: ${err.message || "Error desconocido"}`)
+    } finally {
+      setCargandoRespaldo(false)
+    }
   }
 
-  // IMPORTAR RESPALDO JSON
+  // IMPORTAR RESPALDO JSON DIRECTO A SUPABASE
   const handleImportarArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
+      setCargandoRespaldo(true)
       try {
-        const data = JSON.parse(event.target?.result as string)
-        Object.entries(data).forEach(([key, value]) => {
-          if (value !== null) {
-            localStorage.setItem(key, value as string)
-          }
-        })
-        toast.success("¡Respaldo importado con éxito! Reiniciando panel...")
+        const parsed = JSON.parse(event.target?.result as string)
+        
+        if (!parsed || typeof parsed !== "object" || !parsed.unidades) {
+          throw new Error("El archivo no es un respaldo válido o no contiene unidades.")
+        }
+
+        const cleanTable = async (tableName: string) => {
+          const { error } = await supabase.from(tableName).delete().neq("id", 0)
+          if (error) console.warn(`Error al limpiar tabla ${tableName}:`, error.message)
+        }
+
+        await Promise.all([
+          cleanTable("mensualidades"),
+          cleanTable("multas_asignadas"),
+          cleanTable("proyectos_asignados"),
+          cleanTable("cartera"),
+          cleanTable("unidades"),
+          cleanTable("configuracion_torre"),
+          cleanTable("configuracion_aviso"),
+          cleanTable("configuracion_automatico"),
+          cleanTable("configuracion_tasas_mora")
+        ])
+
+        const insertTable = async (tableName: string, rows: any[]) => {
+          if (!rows || rows.length === 0) return
+          const cleanRows = rows.map(({ created_at, ...rest }) => rest)
+          const { error } = await supabase.from(tableName).insert(cleanRows)
+          if (error) throw new Error(`Error al restaurar tabla ${tableName}: ${error.message}`)
+        }
+
+        await insertTable("configuracion_torre", parsed.configuracion_torre || [])
+        await insertTable("configuracion_aviso", parsed.configuracion_aviso || [])
+        await insertTable("configuracion_automatico", parsed.configuracion_automatico || [])
+        await insertTable("configuracion_tasas_mora", parsed.configuracion_tasas_mora || [])
+        await insertTable("unidades", parsed.unidades || [])
+        await insertTable("mensualidades", parsed.mensualidades || [])
+        await insertTable("multas_asignadas", parsed.multas_asignadas || [])
+        await insertTable("proyectos_asignados", parsed.proyectos_asignados || [])
+        await insertTable("cartera", parsed.cartera || [])
+
+        toast.success("¡Respaldo completo restaurado en Supabase con éxito! Recargando...")
         setTimeout(() => {
           window.location.reload()
         }, 1500)
-      } catch (err) {
-        toast.error("El archivo no es un respaldo válido")
+      } catch (err: any) {
+        console.error(err)
+        toast.error(`Error al importar respaldo: ${err.message || "Formato no compatible"}`)
+      } finally {
+        setCargandoRespaldo(false)
       }
     }
     reader.readAsText(file)
+  }
+
+  // EXPORTAR REPORTE DE CARTERA A EXCEL (CSV)
+  const exportarAExcel = async () => {
+    setCargandoExcel(true)
+    try {
+      const [
+        unidadesRes,
+        mensualidadesRes,
+        multasRes,
+        proyectosRes,
+        carteraRes
+      ] = await Promise.all([
+        supabase.from("unidades").select("unidad, propietario, telefono").order("unidad", { ascending: true }),
+        supabase.from("mensualidades").select("unidad, valor").eq("estado", "Pendiente"),
+        supabase.from("multas_asignadas").select("unidad, valor").in("estado", ["Pendiente", "Vencida"]),
+        supabase.from("proyectos_asignados").select("unidad, valor").eq("estado", "Pendiente"),
+        supabase.from("cartera").select("unidad, deuda")
+      ])
+
+      if (unidadesRes.error || mensualidadesRes.error || multasRes.error || proyectosRes.error || carteraRes.error) {
+        throw new Error("Error al obtener los datos para el reporte de Excel")
+      }
+
+      const unidades = unidadesRes.data || []
+      const mensualidades = mensualidadesRes.data || []
+      const multas = multasRes.data || []
+      const proyectos = proyectosRes.data || []
+      const cartera = carteraRes.data || []
+
+      const deudasMens: Record<string, number> = {}
+      mensualidades.forEach(m => {
+        deudasMens[m.unidad] = (deudasMens[m.unidad] || 0) + (Number(m.valor) || 0)
+      })
+
+      const deudasMult: Record<string, number> = {}
+      multas.forEach(m => {
+        deudasMult[m.unidad] = (deudasMult[m.unidad] || 0) + (Number(m.valor) || 0)
+      })
+
+      const deudasProy: Record<string, number> = {}
+      proyectos.forEach(p => {
+        deudasProy[p.unidad] = (deudasProy[p.unidad] || 0) + (Number(p.valor) || 0)
+      })
+
+      const deudasCart: Record<string, number> = {}
+      cartera.forEach(c => {
+        deudasCart[c.unidad] = Number(c.deuda) || 0
+      })
+
+      let csvContent = "Apartamento;Propietario;Teléfono;Cuotas Pendientes;Multas Pendientes;Proyectos Pendientes;Cartera Anterior;Total Deuda\r\n"
+
+      unidades.forEach(u => {
+        const cuotas = deudasMens[u.unidad] || 0
+        const multas = deudasMult[u.unidad] || 0
+        const proy = deudasProy[u.unidad] || 0
+        const anterior = deudasCart[u.unidad] || 0
+        const total = cuotas + multas + proy + anterior
+
+        const propietarioSanitizado = String(u.propietario || "Sin Nombre").replace(/;/g, ",")
+        const telefonoSanitizado = String(u.telefono || "").replace(/;/g, ",")
+
+        csvContent += `${u.unidad};${propietarioSanitizado};${telefonoSanitizado};${cuotas};${multas};${proy};${anterior};${total}\r\n`
+      })
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `reporte-cartera-${nombreTorre.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success("Reporte de Excel descargado con éxito")
+    } catch (err: any) {
+      console.error(err)
+      toast.error(`Error al generar Excel: ${err.message || "Error desconocido"}`)
+    } finally {
+      setCargandoExcel(false)
+    }
   }
 
   // LOGO UPLOAD (BASE64)
@@ -1503,14 +1642,15 @@ export function ConfiguracionContent() {
 
           {showDbBackup && (
             <div className="space-y-4 pt-5 border-t border-[#1E293B]/20 mt-5 animate-[fadeIn_0.2s_ease-out]">
-              <div className="flex gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={exportarDatos}
-                  className="flex-1 bg-[#1B2336] border border-[#1E293B]/80 hover:bg-[#1E293B]/40 hover:text-white text-slate-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+                  disabled={cargandoRespaldo}
+                  className="bg-[#1B2336] border border-[#1E293B]/80 hover:bg-[#1E293B]/40 hover:text-white text-slate-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   <Download className="w-4 h-4 text-indigo-400" />
-                  Exportar
+                  {cargandoRespaldo ? "Exportando..." : "Respaldo JSON"}
                 </button>
                 
                 <input
@@ -1518,15 +1658,27 @@ export function ConfiguracionContent() {
                   id="importar-db"
                   accept=".json"
                   onChange={handleImportarArchivo}
+                  disabled={cargandoRespaldo}
                   className="hidden"
                 />
                 <button
                   type="button"
                   onClick={() => document.getElementById("importar-db")?.click()}
-                  className="flex-1 bg-[#1B2336] border border-[#1E293B]/80 hover:bg-[#1E293B]/40 hover:text-white text-slate-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+                  disabled={cargandoRespaldo}
+                  className="bg-[#1B2336] border border-[#1E293B]/80 hover:bg-[#1E293B]/40 hover:text-white text-slate-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   <Upload className="w-4 h-4 text-emerald-400" />
-                  Importar
+                  {cargandoRespaldo ? "Restaurando..." : "Restaurar JSON"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={exportarAExcel}
+                  disabled={cargandoExcel}
+                  className="sm:col-span-2 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-500/60 hover:from-emerald-500/20 hover:to-teal-500/20 text-emerald-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  <Database className="w-4 h-4 text-emerald-400" />
+                  {cargandoExcel ? "Generando Excel..." : "Exportar a Excel"}
                 </button>
               </div>
 
