@@ -274,7 +274,7 @@ cerrarModal();
       </div>
 
       {vistaActual === "tabla" ? (
-        <div className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-3xl shadow-2xl overflow-hidden p-1 print:hidden">
+        <div className="bg-[#131926]/90 border border-[#1E293B]/50 rounded-3xl shadow-2xl overflow-x-auto p-1 print:hidden">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#0B0F19]/40 border-b border-[#1E293B]/40 text-xs font-bold text-slate-400 uppercase tracking-wider">

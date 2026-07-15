@@ -170,7 +170,7 @@ const agrupados = registrosFiltrados.reduce(
         }
       `}} />
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Proyectos</h1>
           <p className="text-slate-400 text-sm mt-1">Mantenimiento y mejoras del edificio</p>

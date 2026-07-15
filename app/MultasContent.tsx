@@ -105,7 +105,7 @@ export function MultasContent() {
       `}} />
 
       {/* CABECERA */}
-      <div className="flex items-center justify-between mb-6 clase-cabecera-ocultar-print">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 clase-cabecera-ocultar-print">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Multas</h1>
           <p className="text-slate-400 text-sm mt-1">Catálogo de infracciones y recargos</p>

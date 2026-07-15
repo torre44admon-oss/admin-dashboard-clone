@@ -135,8 +135,8 @@ onClose()
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-[fadeIn_0.2s_ease-out]">
-      <div className="bg-[#131926] border border-[#1E293B]/60 w-[500px] rounded-2xl shadow-2xl p-6 text-white">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-[fadeIn_0.2s_ease-out] p-4">
+      <div className="bg-[#131926] border border-[#1E293B]/60 w-full max-w-[500px] rounded-2xl shadow-2xl p-6 text-white">
         
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">

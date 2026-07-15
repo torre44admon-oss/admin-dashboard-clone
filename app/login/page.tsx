@@ -220,7 +220,7 @@ export default function LoginPage() {
       </div>
 
       {/* MAIN CONTAINER CARD */}
-      <div className="relative w-[1000px] h-[540px] bg-[#070A21] rounded-[20px] overflow-hidden flex flex-row shadow-[0_30px_100px_rgba(0,0,0,0.8)] z-10 animate-[fadeIn_0.5s_ease-out] border border-white/5 shrink-0">
+      <div className="relative w-full max-w-[420px] lg:max-w-[1000px] h-auto lg:h-[540px] bg-[#070A21] rounded-[20px] overflow-hidden flex flex-col lg:flex-row shadow-[0_30px_100px_rgba(0,0,0,0.8)] z-10 animate-[fadeIn_0.5s_ease-out] border border-white/5 shrink-0 mx-4 my-8">
         
         {/* CARD BACKGROUND FLUID WAVES */}
         <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-40" viewBox="0 0 1000 540" preserveAspectRatio="none">
@@ -229,9 +229,9 @@ export default function LoginPage() {
         </svg>
 
         {/* LEFT SIDE: FORM ELEVATED BOX CARD */}
-        <div className="w-[45%] h-full flex items-center justify-center p-8 z-10">
+        <div className="w-full lg:w-[45%] h-auto lg:h-full flex items-center justify-center p-6 lg:p-8 z-10">
           
-          <div className="bg-[#090C28]/95 backdrop-blur-md rounded-[16px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 p-8 flex flex-col justify-between h-[420px] w-[340px]">
+          <div className="bg-[#090C28]/95 backdrop-blur-md rounded-[16px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 p-6 lg:p-8 flex flex-col justify-between h-[420px] w-full max-w-[340px]">
             
             {/* AVATAR CENTER (DYNAMIC USER LOGO) */}
             <div className="flex flex-col items-center mt-1">
@@ -307,7 +307,7 @@ export default function LoginPage() {
         </div>
 
         {/* RIGHT SIDE: LOGO TEXT & BRANDING */}
-        <div className="w-[55%] h-full flex flex-col items-center justify-center text-center p-12 z-10">
+        <div className="hidden lg:flex lg:w-[55%] h-full flex flex-col items-center justify-center text-center p-12 z-10">
           <h1 className="text-[52px] font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#00E5FF] to-[#1A82FF] leading-none mb-4 font-poppins uppercase">
             ALTO DE SANTA ELENA
           </h1>
