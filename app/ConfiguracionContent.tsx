@@ -559,7 +559,13 @@ export function ConfiguracionContent() {
         }
 
         const cleanTable = async (tableName: string) => {
-          const { error } = await supabase.from(tableName).delete().neq("id", 0)
+          let query = supabase.from(tableName).delete()
+          if (tableName === "unidades" || tableName === "cobros") {
+            query = query.neq("unidad", "")
+          } else {
+            query = query.gt("id", 0)
+          }
+          const { error } = await query
           if (error) console.warn(`Error al limpiar tabla ${tableName}:`, error.message)
         }
 
@@ -794,7 +800,7 @@ export function ConfiguracionContent() {
   }
 
   // RESET GENERAL
-  const handleEjecutarLimpiezaConClave = (e: React.FormEvent) => {
+  const handleEjecutarLimpiezaConClave = async (e: React.FormEvent) => {
     e.preventDefault()
     const claveGuardada = localStorage.getItem("torre_admin_password") || "12345"
 
@@ -805,37 +811,69 @@ export function ConfiguracionContent() {
       return
     }
 
-    localStorage.clear()
-    localStorage.setItem("torre_admin_password", claveGuardada)
+    try {
+      const cleanTable = async (tableName: string) => {
+        let query = supabase.from(tableName).delete()
+        if (tableName === "unidades" || tableName === "cobros") {
+          query = query.neq("unidad", "")
+        } else {
+          query = query.gt("id", 0)
+        }
+        const { error } = await query
+        if (error) console.warn(`Error al limpiar tabla Supabase ${tableName}:`, error.message)
+      }
 
-    // Valores iniciales por defecto
-    localStorage.setItem("apartamentos_db", "[]")
-    localStorage.setItem("apartamentos", "[]")
-    localStorage.setItem("unidades_db", "[]")
-    localStorage.setItem("unidades", "[]")
-    localStorage.setItem("multas_db", "[]")
-    localStorage.setItem("multas", "[]")
-    localStorage.setItem("portafolio_multas_db", "[]")
-    localStorage.setItem("historial_multas_db", "[]")
-    localStorage.setItem("proyectos_db", "[]")
-    localStorage.setItem("proyectos", "[]")
-    localStorage.setItem("portafolio_proyectos_db", "[]")
-    localStorage.setItem("cobros_db", "[]")
-    localStorage.setItem("cobros", "[]")
-    localStorage.setItem("torre_cartera_db", "{}")
-    localStorage.setItem("torre_historial_db", "[]")
-    localStorage.setItem("sistema_master_limpio", "true")
+      await Promise.all([
+        cleanTable("mensualidades"),
+        cleanTable("multas_asignadas"),
+        cleanTable("portafolio_multas"),
+        cleanTable("proyectos_asignados"),
+        cleanTable("portafolio_proyectos"),
+        cleanTable("historial_cartera"),
+        cleanTable("cartera"),
+        cleanTable("cobros"),
+        cleanTable("unidades"),
+        cleanTable("configuracion_torre"),
+        cleanTable("configuracion_aviso"),
+        cleanTable("configuracion_automatico"),
+        cleanTable("configuracion_tasas_mora")
+      ])
 
-    toast.success("¡Formateo Exitoso!", {
-      description: "Las unidades, multas, proyectos y cobros se han vaciado. Reiniciando panel..."
-    })
+      localStorage.clear()
+      localStorage.setItem("torre_admin_password", claveGuardada)
 
-    setIsResetModalOpen(false)
-    setClaveAutorizacion("")
+      // Valores iniciales por defecto
+      localStorage.setItem("apartamentos_db", "[]")
+      localStorage.setItem("apartamentos", "[]")
+      localStorage.setItem("unidades_db", "[]")
+      localStorage.setItem("unidades", "[]")
+      localStorage.setItem("multas_db", "[]")
+      localStorage.setItem("multas", "[]")
+      localStorage.setItem("portafolio_multas_db", "[]")
+      localStorage.setItem("historial_multas_db", "[]")
+      localStorage.setItem("proyectos_db", "[]")
+      localStorage.setItem("proyectos", "[]")
+      localStorage.setItem("portafolio_proyectos_db", "[]")
+      localStorage.setItem("cobros_db", "[]")
+      localStorage.setItem("cobros", "[]")
+      localStorage.setItem("torre_cartera_db", "{}")
+      localStorage.setItem("torre_historial_db", "[]")
+      localStorage.setItem("sistema_master_limpio", "true")
 
-    setTimeout(() => {
-      window.location.reload()
-    }, 1500)
+      toast.success("¡Formateo Exitoso!", {
+        description: "Las unidades, multas, proyectos y cobros se han vaciado de Supabase. Reiniciando panel..."
+      })
+
+      setIsResetModalOpen(false)
+      setClaveAutorizacion("")
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 1500)
+    } catch (err) {
+      console.error(err)
+      toast.error("Error al restablecer el sistema")
+    }
   }
 
   const getFechaHoyFormateada = () => {
