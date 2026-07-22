@@ -8,9 +8,11 @@ export async function POST(request: Request) {
       telefono,
       imageUrl,
     } = await request.json();
-    
-console.log("ENVIANDO IMAGEN:", imageUrl);
-console.log("TELEFONO:", telefono);
+
+    if (!telefono || !mensaje) {
+      return NextResponse.json({ error: "Faltan parámetros requeridos" }, { status: 400 });
+    }
+
 
     const response = await fetch(
       `https://graph.facebook.com/v23.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -44,14 +46,7 @@ console.log("TELEFONO:", telefono);
     );
 
     const data = await response.json();
-
-    console.log(
-  "META RESPONSE:",
-  JSON.stringify(data, null, 2)
-);
-return NextResponse.json(data, {
-  status: response.status,
-});
+    return NextResponse.json(data, { status: response.status });
 
   } catch (error) {
 

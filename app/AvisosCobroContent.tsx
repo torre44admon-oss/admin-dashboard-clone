@@ -5,8 +5,6 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { FileText, Send, Trash2 } from "lucide-react"
 import { PlantillaPropietario } from "../components/dashboard/PlantillaPropietario"
-import html2canvas from "html2canvas-pro"
-import jsPDF from "jspdf"
 
 interface Apartamento {
   unidad: string
@@ -372,62 +370,7 @@ export function AvisosCobroContent({ apartamentos }: Props) {
     return digits
   }
 
-  async function generatePngBlobFromElement(el: HTMLElement) {
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#0b0f19"
-    })
 
-    const dataUrl = canvas.toDataURL("image/png")
-    const res = await fetch(dataUrl)
-    const blob = await res.blob()
-
-    return blob
-  }
-
-  async function generatePdfBlobFromElement(el: HTMLElement) {
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#0b0f19"
-    })
-
-    const imgData = canvas.toDataURL("image/png")
-
-    const pdf = new jsPDF({
-      unit: "px",
-      format: [canvas.width, canvas.height]
-    })
-
-    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
-
-    const blob = pdf.output("blob")
-
-    return blob
-  }
-  async function copyImageBlobToClipboard(blob: Blob) {
-    // @ts-ignore
-    if (
-      !navigator.clipboard ||
-      typeof (window as any).ClipboardItem === "undefined"
-    ) {
-      return false
-    }
-
-    try {
-      // @ts-ignore
-      const item = new ClipboardItem({ [blob.type]: blob })
-
-      // @ts-ignore
-      await navigator.clipboard.write([item])
-
-      return true
-    } catch (err) {
-      console.error("No se pudo copiar al portapapeles:", err)
-      return false
-    }
-  }
 async function uploadAvisoImage(blob: Blob) {
   const fileName = `aviso-${Date.now()}.png`
 
@@ -449,19 +392,6 @@ async function uploadAvisoImage(blob: Blob) {
   return data.publicUrl
 }
 
-  function downloadBlob(blob: Blob, filename = "aviso.pdf") {
-    const url = URL.createObjectURL(blob)
-
-    const a = document.createElement("a")
-    a.href = url
-    a.download = filename
-
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-
-    URL.revokeObjectURL(url)
-  }
 
   const handleGuardarYEnviarFactura = async () => {
     if (!aptoActual) {
@@ -573,8 +503,6 @@ const { data, error } = await supabase
   .from("cobros")
   .insert([nuevoCobro])
 
-console.log("DATA:", data)
-console.log("ERROR:", error)
 
 const mesesMap: Record<string, string> = {
   "enero": "01", "febrero": "02", "marzo": "03", "abril": "04",
@@ -698,25 +626,17 @@ const respuestaWhatsapp = await fetch(
   }
 )
 
-const resultadoWhatsapp =
-  await respuestaWhatsapp.json()
-  console.log("URL IMAGEN:", imageUrl)
+      const resultadoWhatsapp = await respuestaWhatsapp.json()
 
-console.log(
-  "WHATSAPP RESPONSE:",
-  JSON.stringify(data, null, 2)
-)
-
-      const pdfBlob =
-        await generatePdfBlobFromElement(
-          plantillaEl as HTMLElement
-        )
-
-      downloadBlob(
-        pdfBlob,
-        `aviso_${aptoActual.unidad}.pdf`
-      )
-
+      // Generar y descargar PDF usando la misma imagen del servidor
+      const pdfRes = await fetch(avisoImageUrl)
+      const pdfImgBlob = await pdfRes.blob()
+      const pdfImgUrl = URL.createObjectURL(pdfImgBlob)
+      const a = document.createElement("a")
+      a.href = imageUrl || pdfImgUrl
+      a.download = `aviso_${aptoActual.unidad}.pdf`
+      a.click()
+      URL.revokeObjectURL(pdfImgUrl)
 
       toast.success(
   "Se descargó el PDF y se abrió WhatsApp."

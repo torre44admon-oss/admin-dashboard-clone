@@ -92,7 +92,6 @@ const valorNumerico = Number(
   String(multa.m).replace(/[^0-9]/g, "")
 )
 
-console.log("VALOR:", valorNumerico)
 const registroMulta = {
   unidad: unidad.unidad,
   propietario: unidad.propietario,
