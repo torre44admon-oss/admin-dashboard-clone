@@ -118,7 +118,15 @@ export async function GET(request: Request) {
       }, { status: 400 })
     }
 
-    // 2. Obtener Unidades
+    // 2. Obtener nombre de la torre desde configuracion
+    const { data: torreData } = await supabase
+      .from("configuracion_torre")
+      .select("nombre_torre")
+      .order("id", { ascending: false })
+      .limit(1)
+    const nombreTorre = torreData?.[0]?.nombre_torre || "Condominio"
+
+    // 3. Obtener Unidades
     const { data: unidades, error: errorUnidades } = await supabase
       .from("unidades")
       .select("*")
@@ -167,7 +175,7 @@ export async function GET(request: Request) {
 
     // 6. Construir el reporte línea por línea
     let mensajeReporte = `*Informe de Deudores y Cartera*\n`
-    mensajeReporte += `*Alto de Santa Elena - Condominio*\n`
+    mensajeReporte += `*${nombreTorre}*\n`
     mensajeReporte += `Fecha: ${hoyColombia.toLocaleDateString("es-CO")}\n`
     mensajeReporte += `-----------------------------\n\n`
 
@@ -226,7 +234,7 @@ export async function GET(request: Request) {
     mensajeReporte += `_Reporte generado de forma automática por el sistema de cartera._`
 
     if (deudoresEncontrados === 0) {
-      mensajeReporte = `*Informe de Deudores*\n*Alto de Santa Elena*\n\nExcelente noticia: A la fecha no existen deudores pendientes en el sistema.`
+      mensajeReporte = `*Informe de Deudores*\n*${nombreTorre}*\n\nExcelente noticia: A la fecha no existen deudores pendientes en el sistema.`
     }
 
     // 7. Enviar por API de WhatsApp a los destinatarios autorizados

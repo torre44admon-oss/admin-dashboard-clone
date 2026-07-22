@@ -153,8 +153,11 @@ export async function POST(request: Request) {
           }
         }
 
-        // Flujo estándar para propietarios (consultar saldo individual)
-        // 1. Buscar TODOS los apartamentos asociados al número del remitente
+        // 1. Obtener nombre de la torre antes de responder
+        const { data: torreDataPrev } = await supabase.from("configuracion_torre").select("nombre_torre").order("id", { ascending: false }).limit(1)
+        const nombreTorrePrev = torreDataPrev?.[0]?.nombre_torre || "la administración"
+
+        // 2. Buscar TODOS los apartamentos asociados al número del remitente
         const phoneNoCountry = senderPhone.startsWith("57") ? senderPhone.substring(2) : senderPhone
         const { data: unidades, error: errUnidades } = await supabase
           .from("unidades")
@@ -164,16 +167,17 @@ export async function POST(request: Request) {
         if (errUnidades || !unidades || unidades.length === 0) {
           await enviarTextoWhatsApp(
             senderPhone,
-            `👋 ¡Hola! Te has comunicado con la administración de Alto de Santa Elena.\n\n⚠️ No encontramos ningún apartamento registrado con tu número de teléfono (${senderPhone}). Por favor comunícate con la administración para registrar tus datos.`
+            `👋 ¡Hola! Te has comunicado con la administración de ${nombreTorrePrev}.\n\n⚠️ No encontramos ningún apartamento registrado con tu número de teléfono (${senderPhone}). Por favor comunícate con la administración para registrar tus datos.`
           )
           return
         }
 
-        // 2. Obtener datos de la torre y configuración (una sola vez para todas las unidades)
+        // 3. Obtener datos de la torre y configuración (una sola vez para todas las unidades)
         const { data: torreData } = await supabase.from("configuracion_torre").select("*").order("id", { ascending: false }).limit(1)
         const torreConfig = torreData?.[0] || {}
         const nombreTorre = torreConfig.nombre_torre || "Torre 44"
         const montoFijoBase = parseFloat(torreConfig.monto_fijo || "20000")
+
 
         const { data: configAviso } = await supabase.from("configuracion_aviso").select("*").order("id", { ascending: false }).limit(1)
         const mensajeAviso = configAviso?.[0]?.mensaje_aviso || configAviso?.[0]?.mensaje || "Por favor realizar el pago a tiempo."
