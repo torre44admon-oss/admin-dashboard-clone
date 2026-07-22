@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
                   <div style={{ display: "flex", flexDirection: "column", minWidth: 0, justifyContent: "center", flex: 1 }}>
                     <span
                       style={{
-                        fontSize: nombreTorre.length > 25 ? "20px" : nombreTorre.length > 15 ? "25px" : "36px",
+                        fontSize: nombreTorre.length > 40 ? "18px" : nombreTorre.length > 25 ? "22px" : nombreTorre.length > 15 ? "28px" : "36px",
                         fontWeight: "bold",
                         color: "#ffffff",
                         margin: 0,

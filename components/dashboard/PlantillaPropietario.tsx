@@ -99,6 +99,9 @@ export function PlantillaPropietario({
               style={{
                 display: "flex",
                 gap: "22px",
+                flex: 1,
+                minWidth: 0,
+                marginRight: "20px",
               }}
             >
               {logoUrl ? (
@@ -110,6 +113,7 @@ export function PlantillaPropietario({
                     height: "85px",
                     borderRadius: "18px",
                     objectFit: "cover",
+                    flexShrink: 0,
                   }}
                 />
               ) : (
@@ -117,24 +121,35 @@ export function PlantillaPropietario({
                   style={{
                     background: "#2d4486",
                     color: "#fff",
-                    padding: "22px",
+                    width: "85px",
+                    height: "85px",
                     borderRadius: "22px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
                   <Building size={42} />
                 </div>
               )}
 
-              <div>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <h1
                   style={{
-                    fontSize: "48px",
+                    fontSize:
+                      nombreTorre.length > 40
+                        ? "22px"
+                        : nombreTorre.length > 28
+                        ? "26px"
+                        : nombreTorre.length > 18
+                        ? "32px"
+                        : "40px",
                     fontWeight: "bold",
                     margin: 0,
-                    lineHeight: 1.1,
+                    lineHeight: 1.2,
+                    wordBreak: "break-word",
+                    color: "#1e293b",
                   }}
                 >
                   {nombreTorre}
@@ -156,9 +171,9 @@ export function PlantillaPropietario({
                   style={{
                     color: "#2d4486",
                     fontWeight: "bold",
-                    marginTop: "12px",
-                    marginBottom: "12px",
-                    fontSize: "24px",
+                    marginTop: "10px",
+                    marginBottom: "10px",
+                    fontSize: "22px",
                     letterSpacing: "1px",
                   }}
                 >
@@ -171,10 +186,11 @@ export function PlantillaPropietario({
             <div
               style={{
                 background: "#f8fafc",
-                padding: "24px",
+                padding: "20px 24px",
                 borderRadius: "22px",
                 border: "1px solid #e2e8f0",
-                minWidth: "260px",
+                minWidth: "220px",
+                flexShrink: 0,
               }}
             >
 
