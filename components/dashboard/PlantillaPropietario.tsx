@@ -56,11 +56,11 @@ export function PlantillaPropietario({
     <div
       style={{
         width: "800px",
-        minHeight: "1400px",
-        background: "#ffffff",
+        minHeight: "1350px",
+        background: "#0b0f19",
         padding: "45px",
-        color: "#1e293b",
-        fontFamily: "Arial",
+        color: "#ffffff",
+        fontFamily: "Arial, sans-serif",
         boxSizing: "border-box",
       }}
     >
@@ -68,11 +68,11 @@ export function PlantillaPropietario({
       {/* CONTENEDOR */}
       <div
         style={{
-          border: "1px solid #dfe5ec",
+          border: "1px solid #1e293b",
           borderRadius: "30px",
           padding: "50px",
-          background: "#ffffff",
-          minHeight: "1300px",
+          background: "#151c2c",
+          minHeight: "1260px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
@@ -88,7 +88,7 @@ export function PlantillaPropietario({
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
-              borderBottom: "2px solid #e5e7eb",
+              borderBottom: "1px solid #2d3748",
               paddingBottom: "35px",
               marginBottom: "40px",
             }}
@@ -149,7 +149,7 @@ export function PlantillaPropietario({
                     margin: 0,
                     lineHeight: 1.2,
                     wordBreak: "break-word",
-                    color: "#1e293b",
+                    color: "#ffffff",
                   }}
                 >
                   {nombreTorre}
@@ -158,7 +158,7 @@ export function PlantillaPropietario({
                   <p
                     style={{
                       fontSize: "14px",
-                      color: "#64748b",
+                      color: "#94a3b8",
                       margin: "6px 0 0 2px",
                       fontWeight: "normal",
                     }}
@@ -169,11 +169,11 @@ export function PlantillaPropietario({
 
                 <p
                   style={{
-                    color: "#2d4486",
+                    color: "#94a3b8",
                     fontWeight: "bold",
                     marginTop: "10px",
                     marginBottom: "10px",
-                    fontSize: "22px",
+                    fontSize: "20px",
                     letterSpacing: "1px",
                   }}
                 >
@@ -185,23 +185,23 @@ export function PlantillaPropietario({
             {/* RECUADRO DERECHO */}
             <div
               style={{
-                background: "#f8fafc",
+                background: "#1e293b",
                 padding: "20px 24px",
                 borderRadius: "22px",
-                border: "1px solid #e2e8f0",
+                border: "1px solid #2d3748",
                 minWidth: "220px",
                 flexShrink: 0,
               }}
             >
 
               {/* FECHA */}
-              <div style={{ marginBottom: "28px" }}>
+              <div style={{ marginBottom: "24px" }}>
                 <div
                   style={{
-                    fontSize: "15px",
+                    fontSize: "14px",
                     color: "#94a3b8",
                     fontWeight: "bold",
-                    marginBottom: "10px",
+                    marginBottom: "8px",
                     textTransform: "uppercase",
                   }}
                 >
@@ -210,8 +210,9 @@ export function PlantillaPropietario({
 
                 <div
                   style={{
-                    fontSize: "22px",
+                    fontSize: "20px",
                     fontWeight: "bold",
+                    color: "#ffffff",
                     lineHeight: 1.4,
                   }}
                 >
@@ -223,10 +224,10 @@ export function PlantillaPropietario({
               <div>
                 <div
                   style={{
-                    fontSize: "15px",
+                    fontSize: "14px",
                     color: "#94a3b8",
                     fontWeight: "bold",
-                    marginBottom: "10px",
+                    marginBottom: "8px",
                     textTransform: "uppercase",
                   }}
                 >
@@ -235,10 +236,10 @@ export function PlantillaPropietario({
 
                 <div
                   style={{
-                    fontSize: "22px",
+                    fontSize: "20px",
                     fontWeight: "bold",
                     lineHeight: 1.4,
-                    color: "#2d4486",
+                    color: "#60a5fa",
                   }}
                 >
                   {periodoMesAnio}
@@ -251,8 +252,8 @@ export function PlantillaPropietario({
           {/* DATOS */}
           <div
             style={{
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
+              background: "#1e293b",
+              border: "1px solid #2d3748",
               borderRadius: "24px",
               padding: "35px",
               marginBottom: "40px",
@@ -263,22 +264,26 @@ export function PlantillaPropietario({
           >
 
             <div>
-              <p style={{ marginBottom: "22px", fontSize: "24px" }}>
-                <strong>Apartamento:</strong> {numeroUnidad}
+              <p style={{ marginBottom: "22px", fontSize: "22px", color: "#94a3b8" }}>
+                <strong style={{ color: "#94a3b8" }}>Apartamento:</strong>{" "}
+                <span style={{ color: "#34d399", fontWeight: "bold" }}>{numeroUnidad}</span>
               </p>
 
-              <p style={{ margin: 0, fontSize: "24px" }}>
-                <strong>Teléfono:</strong> {telefonoPropietario}
+              <p style={{ margin: 0, fontSize: "22px", color: "#94a3b8" }}>
+                <strong style={{ color: "#94a3b8" }}>Teléfono:</strong>{" "}
+                <span style={{ color: "#ffffff", fontWeight: "bold" }}>{telefonoPropietario}</span>
               </p>
             </div>
 
             <div>
-              <p style={{ marginBottom: "22px", fontSize: "24px" }}>
-                <strong>Propietario:</strong> {nombrePropietario}
+              <p style={{ marginBottom: "22px", fontSize: "22px", color: "#94a3b8" }}>
+                <strong style={{ color: "#94a3b8" }}>Propietario:</strong>{" "}
+                <span style={{ color: "#ffffff", fontWeight: "bold" }}>{nombrePropietario}</span>
               </p>
 
-              <p style={{ margin: 0, fontSize: "24px" }}>
-                <strong>Correo:</strong> {correoPropietario}
+              <p style={{ margin: 0, fontSize: "22px", color: "#94a3b8" }}>
+                <strong style={{ color: "#94a3b8" }}>Correo:</strong>{" "}
+                <span style={{ color: "#ffffff", fontWeight: "bold" }}>{correoPropietario || "Sin correo"}</span>
               </p>
             </div>
 
@@ -288,10 +293,12 @@ export function PlantillaPropietario({
           <div style={{ marginBottom: "40px" }}>
             <h3
               style={{
-                fontSize: "18px",
-                color: "#64748b",
-                marginBottom: "18px",
+                fontSize: "16px",
+                color: "#94a3b8",
+                marginBottom: "16px",
                 letterSpacing: "1px",
+                fontWeight: "bold",
+                textTransform: "uppercase",
               }}
             >
               CUOTA ADMINISTRATIVA
@@ -299,13 +306,15 @@ export function PlantillaPropietario({
 
             <div
               style={{
-                border: "1px solid #dfe5ec",
+                background: "#1e293b",
+                border: "1px solid #2d3748",
                 borderRadius: "22px",
-                padding: "30px",
+                padding: "26px 30px",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                fontSize: "24px",
+                fontSize: "22px",
+                color: "#ffffff",
               }}
             >
               <div>
@@ -315,10 +324,11 @@ export function PlantillaPropietario({
               <div
                 style={{
                   fontWeight: "bold",
-                  fontSize: "28px",
+                  fontSize: "26px",
+                  color: "#ffffff",
                 }}
               >
-                $ {(montoCuotaMantenimiento / 1000).toFixed(3)}
+                $ {montoCuotaMantenimiento.toLocaleString("es-CO")}
               </div>
             </div>
 
@@ -326,17 +336,17 @@ export function PlantillaPropietario({
               <div
                 style={{
                   marginTop: "14px",
-                  fontSize: "20px",
-                  color: "#b45309",
-                  background: "#fef3c7",
-                  border: "1px solid #fde68a",
+                  fontSize: "18px",
+                  color: "#fbbf24",
+                  background: "rgba(245, 158, 11, 0.1)",
+                  border: "1px solid rgba(245, 158, 11, 0.2)",
                   borderRadius: "14px",
                   padding: "12px 20px",
                   fontWeight: "bold",
                   lineHeight: "1.4",
                 }}
               >
-                Meses Vencidos: <span style={{ fontWeight: "normal", color: "#78350f" }}>{mesesVencidos.join(", ")}</span>
+                Meses Vencidos: <span style={{ fontWeight: "normal", color: "#fef3c7" }}>{mesesVencidos.join(", ")}</span>
               </div>
             )}
           </div>
@@ -346,10 +356,12 @@ export function PlantillaPropietario({
             <div style={{ marginBottom: "40px" }}>
               <h3
                 style={{
-                  fontSize: "18px",
-                  color: "#64748b",
-                  marginBottom: "18px",
+                  fontSize: "16px",
+                  color: "#94a3b8",
+                  marginBottom: "16px",
                   letterSpacing: "1px",
+                  fontWeight: "bold",
+                  textTransform: "uppercase",
                 }}
               >
                 CARGOS ADICIONALES
@@ -357,7 +369,8 @@ export function PlantillaPropietario({
 
               <div
                 style={{
-                  border: "1px solid #dfe5ec",
+                  background: "#1e293b",
+                  border: "1px solid #2d3748",
                   borderRadius: "22px",
                   overflow: "hidden",
                 }}
@@ -369,12 +382,13 @@ export function PlantillaPropietario({
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      padding: "26px 30px",
+                      padding: "24px 30px",
                       borderBottom:
                         idx !== cargosAdicionales.length - 1
-                          ? "1px solid #e5e7eb"
+                          ? "1px solid #2d3748"
                           : "none",
-                      fontSize: "22px",
+                      fontSize: "20px",
+                      color: "#ffffff",
                     }}
                   >
                     <div>
@@ -384,10 +398,11 @@ export function PlantillaPropietario({
                     <div
                       style={{
                         fontWeight: "bold",
-                        fontSize: "24px",
+                        fontSize: "22px",
+                        color: "#ffffff",
                       }}
                     >
-                      $ {(linea.monto / 1000).toFixed(3)}
+                      $ {linea.monto.toLocaleString("es-CO")}
                     </div>
                   </div>
                 ))}
@@ -398,7 +413,7 @@ export function PlantillaPropietario({
           {/* TOTAL */}
           <div
             style={{
-              background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
+              background: "linear-gradient(135deg, #1d4ed8, #2563eb)",
               color: "#ffffff",
               borderRadius: "22px",
               padding: "24px 30px",
@@ -415,75 +430,51 @@ export function PlantillaPropietario({
                 style={{
                   fontSize: "18px",
                   opacity: 0.9,
-                  marginBottom: "6px",
+                  marginBottom: "4px",
                   fontWeight: "bold",
                   letterSpacing: "1px",
                 }}
               >
                 TOTAL A PAGAR
               </div>
-
-              <div
-                style={{
-                  fontSize: "16px",
-                  opacity: 0.8,
-                }}
-              >
-                {}
-              </div>
             </div>
 
             {/* VALOR */}
             <div
               style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: "10px",
+                fontSize: "44px",
+                fontWeight: "bold",
+                lineHeight: 1,
               }}
             >
-              <div
-                style={{
-                  fontSize: "52px",
-                  fontWeight: "bold",
-                  lineHeight: 1,
-                }}
-              >
-                $ {(totalSuma / 1000).toFixed(3)}
-              </div>
-
-              <div
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                  opacity: 0.9,
-                }}
-              >
-                {}
-              </div>
+              $ {totalSuma.toLocaleString("es-CO")}
             </div>
 
           </div>
 
           {/* MENSAJE */}
-          <div
-            style={{
-              background: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: "22px",
-              padding: "28px",
-              marginBottom: "40px",
-            }}
-          >
-            <p
+          {mensajePiePagina && (
+            <div
               style={{
-                margin: 0,
-                fontSize: "22px",
-                lineHeight: "36px",
+                background: "#1e293b",
+                border: "1px solid #2d3748",
+                borderRadius: "22px",
+                padding: "26px",
+                marginBottom: "40px",
               }}
             >
-              {mensajePiePagina}
-            </p>
-          </div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "20px",
+                  lineHeight: "32px",
+                  color: "#cbd5e1",
+                }}
+              >
+                {mensajePiePagina}
+              </p>
+            </div>
+          )}
 
         </div>
 
@@ -491,17 +482,17 @@ export function PlantillaPropietario({
         <div
           style={{
             textAlign: "center",
-            borderTop: "2px dashed #cbd5e1",
-            paddingTop: "35px",
-            marginTop: "35px",
+            borderTop: "2px dashed #334155",
+            paddingTop: "30px",
+            marginTop: "30px",
           }}
         >
           <p
             style={{
-              color: "#2d4486",
+              color: "#60a5fa",
               fontWeight: "bold",
-              marginBottom: "12px",
-              fontSize: "28px",
+              marginBottom: "8px",
+              fontSize: "26px",
             }}
           >
             ¡Gracias por su puntualidad!
@@ -512,6 +503,7 @@ export function PlantillaPropietario({
               color: "#94a3b8",
               fontSize: "18px",
               margin: 0,
+              fontWeight: "bold",
               letterSpacing: "2px",
             }}
           >

@@ -376,7 +376,7 @@ export function AvisosCobroContent({ apartamentos }: Props) {
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
-      backgroundColor: "#ffffff"
+      backgroundColor: "#0b0f19"
     })
 
     const dataUrl = canvas.toDataURL("image/png")
@@ -390,7 +390,7 @@ export function AvisosCobroContent({ apartamentos }: Props) {
     const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
-      backgroundColor: "#ffffff"
+      backgroundColor: "#0b0f19"
     })
 
     const imgData = canvas.toDataURL("image/png")
