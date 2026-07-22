@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
                 <div style={{ display: "flex", flexDirection: "column", width: "50%", gap: "16px", alignItems: "flex-end" }}>
                   {direccion && (
                     <span style={{ fontSize: "18px", color: "#94a3b8" }}>
-                      {direccion}
+                      Dirección: <span style={{ color: "#ffffff", fontWeight: "bold" }}>{direccion}</span>
                     </span>
                   )}
                 </div>

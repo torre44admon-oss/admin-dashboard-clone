@@ -163,7 +163,7 @@ export function PlantillaPropietario({
                       fontWeight: "normal",
                     }}
                   >
-                    {direccionTorre}
+                    Dirección: <span style={{ color: "#ffffff", fontWeight: "bold" }}>{direccionTorre}</span>
                   </p>
                 )}
 
