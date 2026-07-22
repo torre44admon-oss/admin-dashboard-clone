@@ -282,9 +282,11 @@ export async function POST(request: Request) {
 
           const total = montoCuota + cargos.reduce((acc, c) => acc + (parseFloat(c.monto) || 0), 0)
 
-          let msgText = `👋 *Hola ${u.propietario}* (Apto. ${u.unidad})\n`
+          let msgText = `🏢 *${nombreTorre}*\n`
+          msgText += `👋 *Hola ${u.propietario}* (Apto. ${u.unidad})\n`
           msgText += `Estado de cuenta para *${periodoTexto}*:\n\n`
           msgText += `• *Cuota Administrativa:* $ ${montoCuota.toLocaleString("es-CO")}\n`
+
 
           if (cargos.length > 0) {
             msgText += `\n*Cargos adicionales:*\n`
