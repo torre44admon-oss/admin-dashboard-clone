@@ -650,15 +650,38 @@ if (!mensExistente) {
       }
 
       const mensajeTexto =
-  `Hola ${aptoActual.propietario}, le envío su aviso de cobro para ${periodoTexto}.`
+        `Hola ${aptoActual.propietario}, le envío su aviso de cobro para ${periodoTexto}.`
 
-const pngBlob =
-  await generatePngBlobFromElement(
-    plantillaEl as HTMLElement
-  )
+      const nombreTorre = localStorage.getItem("nombre_torre") || "TORRE 44"
+      const logoUrl = localStorage.getItem("logo_url") || ""
+      const direccion = localStorage.getItem("direccion_torre") || ""
+      const montoCuota = cuotaBase?.monto ?? 20000
 
-const imageUrl =
-  await uploadAvisoImage(pngBlob)
+      const cargos = [
+        ...(saldoMoraCalculado > 0 ? [{ concepto: "Deuda de Mora", monto: saldoMoraCalculado }] : []),
+        ...(interesMoraCalculado > 0 ? [{ concepto: `Interés de Mora (${tasaMoraRef}%)`, monto: interesMoraCalculado }] : []),
+        ...cargosAdicionales.map(c => ({ concepto: c.concepto, monto: c.monto }))
+      ]
+
+      const queryParams = new URLSearchParams({
+        nombreTorre,
+        logoUrl,
+        periodo: periodoTexto,
+        unidad: aptoActual.unidad,
+        propietario: aptoActual.propietario,
+        montoCuota: String(montoCuota),
+        cargos: JSON.stringify(cargos),
+        mensajePie: mensajeConfigurado,
+        direccion
+      })
+
+      const origin = window.location.origin
+      const avisoImageUrl = `${origin}/api/aviso-image?${queryParams.toString()}&t=${Date.now()}`
+
+      const imgRes = await fetch(avisoImageUrl)
+      const pngBlob = await imgRes.blob()
+
+      const imageUrl = await uploadAvisoImage(pngBlob)
 
 const respuestaWhatsapp = await fetch(
   "/api/whatsapp",
