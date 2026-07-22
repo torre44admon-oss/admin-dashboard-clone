@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     const isAdmin = commandPhones.includes(senderPhone) || senderPhone === "573014130109"
 
     // 2. Verificar palabras clave o comandos de administrador
-    const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches"]
+    const palabrasClave = ["hola", "saldo", "deuda", "cobro", "pago", "buenos dias", "buenas tardes", "buenas noches", "enviar", "envia", "envie", "aviso"]
     const coincidePalabra = palabrasClave.some(p => messageText.includes(p))
     const isAdminCommand = messageText === "reporte" || messageText === "informe" || /^(enviar|envia|envie|aviso|cobro)\s+([0-9a-zA-Z-]+)$/.test(messageText)
 
@@ -132,19 +132,21 @@ export async function POST(request: Request) {
           }
 
           // Comando de Envío Individual: "enviar 101" / "aviso 101" / "cobro 101"
+          // El aviso llega AL ADMIN (quien lo pidió), no al propietario
           const match = messageText.match(/^(enviar|envia|envie|aviso|cobro)\s+([0-9a-zA-Z-]+)$/)
           if (match) {
             const unidadId = match[2].toUpperCase()
             try {
-              await enviarTextoWhatsApp(senderPhone, `⏳ Procesando y enviando aviso de cobro al Apto. ${unidadId}...`)
+              await enviarTextoWhatsApp(senderPhone, `⏳ Procesando aviso de cobro del Apto. ${unidadId}...`)
+              // telefono=${senderPhone} → el aviso llega al admin que hizo el pedido
               const res = await fetch(`${origin}/api/cron-aviso?unidad=${unidadId}&manual=true&telefono=${senderPhone}`)
               const data = await res.json()
               const resultado = data.resultados?.[0]
               if (data.success && resultado && resultado.success) {
-                await enviarTextoWhatsApp(senderPhone, `✅ ¡Generado con éxito! Aquí tiene el aviso de cobro del Apto. ${unidadId}.`)
+                await enviarTextoWhatsApp(senderPhone, `✅ Aviso del Apto. ${unidadId} generado y enviado a tu número.`)
               } else {
                 const errorMsg = resultado?.error || data.error || "El apartamento no existe o no tiene un formato válido."
-                await enviarTextoWhatsApp(senderPhone, `❌ Error al generar el aviso al Apto. ${unidadId}: ${errorMsg}`)
+                await enviarTextoWhatsApp(senderPhone, `❌ Error al generar el aviso del Apto. ${unidadId}: ${errorMsg}`)
               }
             } catch (err: any) {
               await enviarTextoWhatsApp(senderPhone, `❌ Error de conexión al enviar el aviso: ${err.message}`)
@@ -201,7 +203,26 @@ export async function POST(request: Request) {
         const anoVigente = fechaCiclo.getFullYear()
         const periodoTexto = `${mesVigente} de ${anoVigente}`
 
-        // 3. Enviar un mensaje por cada apartamento vinculado al número
+        // 4. Si el propietario escribió "enviar" / "aviso" → enviarle la IMAGEN del aviso
+        const quiereImagen = messageText === "enviar" || messageText === "envia" || messageText === "envie" || messageText === "aviso"
+        if (quiereImagen) {
+          for (const u of unidades) {
+            try {
+              await enviarTextoWhatsApp(senderPhone, `⏳ Generando tu aviso de cobro del Apto. ${u.unidad}...`)
+              const res = await fetch(`${origin}/api/cron-aviso?unidad=${u.unidad}&manual=true&telefono=${senderPhone}`)
+              const data = await res.json()
+              const resultado = data.resultados?.[0]
+              if (!data.success || !resultado?.success) {
+                await enviarTextoWhatsApp(senderPhone, `❌ No se pudo generar el aviso: ${resultado?.error || data.error || "Error desconocido"}`)
+              }
+            } catch (err: any) {
+              await enviarTextoWhatsApp(senderPhone, `❌ Error al generar tu aviso: ${err.message}`)
+            }
+          }
+          return
+        }
+
+        // 5. Para todas las demás palabras clave → enviar resumen de texto del estado de cuenta
         for (const u of unidades) {
           const { data: mensualidades } = await supabase.from("mensualidades").select("*").eq("unidad", u.unidad).eq("estado", "Pendiente")
           const { data: multas } = await supabase.from("multas_asignadas").select("*").eq("unidad", u.unidad).in("estado", ["Pendiente", "Vencida"])
@@ -303,7 +324,7 @@ export async function POST(request: Request) {
           }
 
           await enviarTextoWhatsApp(senderPhone, msgText)
-        }
+        } // cierre for propietario texto
       } catch (err) {
         console.error("Error en procesamiento diferido de WhatsApp:", err)
       }
