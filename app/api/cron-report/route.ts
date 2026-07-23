@@ -272,6 +272,32 @@ export async function GET(request: Request) {
 
     const anySuccess = results.some(r => r.ok)
 
+    // 8. También enviar al grupo de WhatsApp si está configurado el bot
+    try {
+      const { data: botConfig } = await supabase
+        .from("configuracion_bot")
+        .select("grupo_whatsapp_id, railway_bot_url, bot_api_key")
+        .order("id", { ascending: false })
+        .limit(1)
+
+      const bot = botConfig?.[0]
+      if (bot?.grupo_whatsapp_id && bot?.railway_bot_url && bot?.bot_api_key) {
+        await fetch(`${bot.railway_bot_url}/send-group`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": bot.bot_api_key
+          },
+          body: JSON.stringify({
+            groupId: bot.grupo_whatsapp_id,
+            message: mensajeReporte
+          })
+        })
+      }
+    } catch (botErr: any) {
+      // Si falla el bot del grupo, no interrumpir el flujo principal
+    }
+
     if (anySuccess && !isManual) {
       const fechaHoyString = `${hoyColombia.getFullYear()}-${hoyColombia.getMonth() + 1}-${hoyColombia.getDate()}`
       await supabase

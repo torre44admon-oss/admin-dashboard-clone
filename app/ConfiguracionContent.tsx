@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { 
   Download, 
@@ -14,7 +14,12 @@ import {
   ChevronUp, 
   Folder, 
   Key,
-  Database
+  Database,
+  Wifi,
+  WifiOff,
+  QrCode,
+  Users,
+  RefreshCw
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
@@ -89,6 +94,15 @@ export function ConfiguracionContent() {
   // RESET
   const [isResetModalOpen, setIsResetModalOpen] = useState(false)
   const [claveAutorizacion, setClaveAutorizacion] = useState("")
+
+  // BOT WHATSAPP GRUPO
+  const [botRailwayUrl, setBotRailwayUrl] = useState("")
+  const [botApiKey, setBotApiKey] = useState("")
+  const [botGrupoId, setBotGrupoId] = useState("")
+  const [botEstado, setBotEstado] = useState<"connected"|"disconnected"|"waiting_qr"|"unknown">("unknown")
+  const [botGrupos, setBotGrupos] = useState<{id:string;name:string;participants:number}[]>([])
+  const [guardandoBot, setGuardandoBot] = useState(false)
+  const [cargandoBotStatus, setCargandoBotStatus] = useState(false)
 
   const [enviandoReporte, setEnviandoReporte] = useState(false)
   const [enviandoAvisos, setEnviandoAvisos] = useState(false)
@@ -280,6 +294,19 @@ export function ConfiguracionContent() {
           const r = accesoDatos[0]
           if (r.clave_acceso) localStorage.setItem("torre_admin_password", r.clave_acceso)
           if (r.login_activo != null) { setLoginActivo(Boolean(r.login_activo)); localStorage.setItem("login_activo", String(r.login_activo)) }
+        }
+
+        // Configuración bot grupo WhatsApp
+        const { data: botDatos } = await supabase
+          .from("configuracion_bot")
+          .select("*")
+          .order("id", { ascending: false })
+          .limit(1)
+        if (botDatos && botDatos.length > 0) {
+          const b = botDatos[0]
+          if (b.railway_bot_url) setBotRailwayUrl(b.railway_bot_url)
+          if (b.bot_api_key) setBotApiKey(b.bot_api_key)
+          if (b.grupo_whatsapp_id) setBotGrupoId(b.grupo_whatsapp_id)
         }
 
       } catch (err) {
@@ -1733,9 +1760,194 @@ export function ConfiguracionContent() {
 
       </div>
 
+      {/* ══ SECCIÓN BOT GRUPO WHATSAPP ═══════════════════════════════════ */}
+      <div className="bg-[#151c2c] border border-[#1e293b] rounded-2xl overflow-hidden mb-6">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between p-5 text-left cursor-pointer hover:bg-[#1e293b]/40 transition-colors"
+          onClick={() => setBotRailwayUrl(v => v)} // just to force re-render; collapse handled below
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+              <QrCode className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <p className="font-bold text-white text-sm">Bot Grupo de WhatsApp</p>
+              <p className="text-slate-400 text-xs">Conecta un número para enviar informes y comunicados al grupo</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {botEstado === "connected" ? (
+              <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                <Wifi className="w-3 h-3" /> Conectado
+              </span>
+            ) : botEstado === "waiting_qr" ? (
+              <span className="flex items-center gap-1.5 text-xs text-yellow-400 bg-yellow-500/10 px-2.5 py-1 rounded-full">
+                <QrCode className="w-3 h-3" /> Esperando QR
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-500/10 px-2.5 py-1 rounded-full">
+                <WifiOff className="w-3 h-3" /> Desconectado
+              </span>
+            )}
+          </div>
+        </button>
 
+        <div className="border-t border-[#1e293b] p-5 space-y-5">
 
-      {/* DIÁLOGO FLOTANTE DE AUTORIZACIÓN CON CONTRASEÑA MÁSTER */}
+          {/* URL y clave del bot */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">URL del Bot (Railway)</label>
+              <input
+                type="url"
+                value={botRailwayUrl}
+                onChange={e => setBotRailwayUrl(e.target.value)}
+                placeholder="https://tu-bot.up.railway.app"
+                className="w-full bg-[#0b0f19] border border-[#2d3748] rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">Clave Secreta (BOT_API_KEY)</label>
+              <input
+                type="password"
+                value={botApiKey}
+                onChange={e => setBotApiKey(e.target.value)}
+                placeholder="torre44_bot_secreto_aqui"
+                className="w-full bg-[#0b0f19] border border-[#2d3748] rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Acciones de conexión */}
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!botRailwayUrl) { toast.error("Ingresa la URL del bot primero."); return }
+                window.open(`${botRailwayUrl}/qr`, "_blank")
+              }}
+              className="flex items-center gap-2 bg-[#1e293b] hover:bg-[#2d3748] border border-[#2d3748] text-slate-300 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+            >
+              <QrCode className="w-4 h-4" /> Escanear QR / Conectar número
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                if (!botRailwayUrl) { toast.error("Ingresa la URL del bot primero."); return }
+                setCargandoBotStatus(true)
+                try {
+                  const res = await fetch(`${botRailwayUrl}/status`)
+                  const data = await res.json()
+                  setBotEstado(data.status || (data.connected ? "connected" : "disconnected"))
+                  toast.info(data.connected ? "✅ Bot conectado" : `Estado: ${data.status || "desconectado"}`)
+                } catch { toast.error("No se pudo conectar con el bot. Verifica la URL.") }
+                finally { setCargandoBotStatus(false) }
+              }}
+              disabled={cargandoBotStatus}
+              className="flex items-center gap-2 bg-[#1e293b] hover:bg-[#2d3748] border border-[#2d3748] text-slate-300 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${cargandoBotStatus ? "animate-spin" : ""}`} />
+              Verificar estado
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                if (!botRailwayUrl || !botApiKey) { toast.error("Ingresa URL y clave secreta primero."); return }
+                try {
+                  const res = await fetch(`${botRailwayUrl}/groups`, { headers: { "x-api-key": botApiKey } })
+                  const data = await res.json()
+                  if (data.groups) { setBotGrupos(data.groups); toast.success(`${data.groups.length} grupos encontrados`) }
+                  else toast.error(data.error || "No se pudieron listar los grupos")
+                } catch { toast.error("Error al obtener grupos.") }
+              }}
+              className="flex items-center gap-2 bg-[#1e293b] hover:bg-[#2d3748] border border-[#2d3748] text-slate-300 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
+            >
+              <Users className="w-4 h-4" /> Ver mis grupos
+            </button>
+          </div>
+
+          {/* Lista de grupos para seleccionar */}
+          {botGrupos.length > 0 && (
+            <div className="bg-[#0b0f19] border border-[#2d3748] rounded-xl p-3">
+              <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wider">Selecciona el grupo destinatario:</p>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {botGrupos.map(g => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => { setBotGrupoId(g.id); toast.success(`Grupo seleccionado: ${g.name}`) }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
+                      botGrupoId === g.id
+                        ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300"
+                        : "hover:bg-[#1e293b] text-slate-300 border border-transparent"
+                    }`}
+                  >
+                    <span className="font-semibold">{g.name}</span>
+                    <span className="text-slate-500 text-xs ml-2">({g.participants} participantes)</span>
+                    {botGrupoId === g.id && <span className="ml-2 text-xs text-emerald-400">✓ Seleccionado</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ID del grupo guardado */}
+          <div>
+            <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">
+              ID del Grupo WhatsApp (se guarda permanentemente)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={botGrupoId}
+                onChange={e => setBotGrupoId(e.target.value)}
+                placeholder="120363...@g.us"
+                className="flex-1 bg-[#0b0f19] border border-[#2d3748] rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
+              />
+              {botGrupoId && (
+                <button
+                  type="button"
+                  onClick={() => { setBotGrupoId(""); toast.info("ID del grupo borrado.") }}
+                  className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  title="Borrar ID del grupo"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-1.5">
+              ⚠️ El ID no cambia si cambias de número. Solo bórralo si el grupo fue eliminado.
+            </p>
+          </div>
+
+          {/* Guardar configuración del bot */}
+          <button
+            type="button"
+            disabled={guardandoBot}
+            onClick={async () => {
+              if (!botRailwayUrl || !botApiKey) { toast.error("Ingresa URL y clave secreta del bot."); return }
+              setGuardandoBot(true)
+              try {
+                const { data: exist } = await supabase.from("configuracion_bot").select("id").order("id", { ascending: false }).limit(1)
+                if (exist && exist.length > 0) {
+                  await supabase.from("configuracion_bot").update({ railway_bot_url: botRailwayUrl, bot_api_key: botApiKey, grupo_whatsapp_id: botGrupoId || null }).eq("id", exist[0].id)
+                } else {
+                  await supabase.from("configuracion_bot").insert({ railway_bot_url: botRailwayUrl, bot_api_key: botApiKey, grupo_whatsapp_id: botGrupoId || null })
+                }
+                toast.success("✅ Configuración del bot guardada correctamente.")
+              } catch { toast.error("Error al guardar la configuración del bot.") }
+              finally { setGuardandoBot(false) }
+            }}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm transition-all active:scale-[0.98] cursor-pointer"
+          >
+            {guardandoBot ? "Guardando..." : "Guardar Configuración del Bot"}
+          </button>
+        </div>
+      </div>
+
       {isResetModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-out]">
           <div className="absolute inset-0" onClick={() => { setIsResetModalOpen(false); setClaveAutorizacion(""); }} />

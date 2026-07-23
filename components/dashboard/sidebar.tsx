@@ -15,7 +15,8 @@ import {
   AlertTriangle,
   FolderKanban,
   Wallet,
-  LogOut
+  LogOut,
+  Megaphone
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -28,6 +29,7 @@ export type PageType =
   | "gestion-proyectos"
   | "configuracion"
   | "gestion-cartera"
+  | "comunicados"
 
 interface SidebarProps {
   currentPage: PageType
@@ -57,6 +59,12 @@ const mainMenuItems: {
     icon: FileText,
     label: "Avisos de Cobro",
     page: "avisos-cobro"
+  },
+
+  {
+    icon: Megaphone,
+    label: "Comunicados",
+    page: "comunicados"
   },
 ]
 

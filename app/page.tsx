@@ -25,6 +25,7 @@ import { MultasContent } from "./MultasContent"
 import { ProyectosContent } from "./ProyectosContent"
 import { ConfiguracionContent } from "./ConfiguracionContent"
 import { CarteraContent } from "./CarteraContent"
+import { ComunicadosContent } from "./ComunicadosContent"
 
 export default function Dashboard() {
 
@@ -353,6 +354,14 @@ export default function Dashboard() {
         {currentPage === "configuracion" && (
 
           <ConfiguracionContent />
+
+        )}
+
+        {/* COMUNICADOS */}
+
+        {currentPage === "comunicados" && (
+
+          <ComunicadosContent />
 
         )}
 
