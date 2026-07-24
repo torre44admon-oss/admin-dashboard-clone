@@ -272,6 +272,7 @@ export async function GET(request: Request) {
 
     const anySuccess = results.some(r => r.ok)
 
+    let botResult = null
     // 8. También enviar al grupo de WhatsApp si está configurado el bot
     try {
       const { data: botConfig } = await supabase
@@ -282,7 +283,8 @@ export async function GET(request: Request) {
 
       const bot = botConfig?.[0]
       if (bot?.grupo_whatsapp_id && bot?.railway_bot_url && bot?.bot_api_key) {
-        await fetch(`${bot.railway_bot_url}/send-group`, {
+        const cleanUrl = bot.railway_bot_url.replace(/\/$/, "")
+        const botRes = await fetch(`${cleanUrl}/send-group`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -293,12 +295,16 @@ export async function GET(request: Request) {
             message: mensajeReporte
           })
         })
+        const botData = await botRes.json()
+        botResult = { ok: botRes.ok, data: botData }
+      } else {
+        botResult = { ok: false, error: "Bot no configurado completamente en la BD" }
       }
     } catch (botErr: any) {
-      // Si falla el bot del grupo, no interrumpir el flujo principal
+      botResult = { ok: false, error: botErr.message }
     }
 
-    if (anySuccess && !isManual) {
+    if ((anySuccess || botResult?.ok) && !isManual) {
       const fechaHoyString = `${hoyColombia.getFullYear()}-${hoyColombia.getMonth() + 1}-${hoyColombia.getDate()}`
       await supabase
         .from("configuracion_automatico")
@@ -307,10 +313,11 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      success: anySuccess,
+      success: anySuccess || botResult?.ok || false,
       destinatarios: destinationPhones,
       deudores: deudoresEncontrados,
       total_cartera: totalCopropiedad,
+      bot_grupo_result: botResult,
       results
     })
 
