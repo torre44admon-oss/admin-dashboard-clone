@@ -1855,13 +1855,21 @@ export function ConfiguracionContent() {
             <button
               type="button"
               onClick={async () => {
-                if (!botRailwayUrl || !botApiKey) { toast.error("Ingresa URL y clave secreta primero."); return }
+                const url = (botRailwayUrl || "").trim().replace(/\/$/, "")
+                const key = (botApiKey || "torre44grupo2026").trim()
+                if (!url) { toast.error("Ingresa la URL del bot primero."); return }
                 try {
-                  const res = await fetch(`${botRailwayUrl}/groups`, { headers: { "x-api-key": botApiKey } })
+                  const res = await fetch(`${url}/groups`, { headers: { "x-api-key": key } })
                   const data = await res.json()
-                  if (data.groups) { setBotGrupos(data.groups); toast.success(`${data.groups.length} grupos encontrados`) }
-                  else toast.error(data.error || "No se pudieron listar los grupos")
-                } catch { toast.error("Error al obtener grupos.") }
+                  if (data.groups) { 
+                    setBotGrupos(data.groups)
+                    toast.success(`${data.groups.length} grupos encontrados`) 
+                  } else {
+                    toast.error(data.error || "No se pudieron listar los grupos")
+                  }
+                } catch (e: any) { 
+                  toast.error(`Error al obtener grupos: ${e.message || "Error de red"}`) 
+                }
               }}
               className="flex items-center gap-2 bg-[#1e293b] hover:bg-[#2d3748] border border-[#2d3748] text-slate-300 px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer"
             >
