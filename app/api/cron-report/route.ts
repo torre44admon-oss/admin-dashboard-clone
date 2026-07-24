@@ -80,33 +80,13 @@ export async function GET(request: Request) {
         })
       }
 
-      if (diaHoy !== diaReporte || currentMinutesTotal < schedMinutesTotal) {
-        // Si la hora actual coincide con la hora configurada para reportes, enviamos un ping de conexión al administrador para mantener activa la API
-        if (horaHoy === (schedHour !== undefined ? schedHour : 8) && telefonoDestino) {
-          try {
-            const origin = new URL(request.url).origin
-            const pingsDestinations = parseDestinations(telefonoDestino, false)
-            for (const phone of pingsDestinations) {
-              await fetch(`${origin}/api/whatsapp`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  telefono: phone,
-                  mensaje: `⚙️ Conexión Activa Torre Admin: El sistema está en línea y funcionando hoy ${diaHoy}/${hoyColombia.getMonth() + 1}.`
-                })
-              })
-            }
-          } catch (e) {
-            console.error("Error al enviar ping de conexión:", e)
-          }
-        }
-
+      if (diaHoy !== diaReporte) {
         const formattedSchedTime = `${(schedHour !== undefined ? schedHour : 8) < 10 ? '0' + (schedHour !== undefined ? schedHour : 8) : (schedHour !== undefined ? schedHour : 8)}:${(schedMin !== undefined ? schedMin : 0) < 10 ? '0' + (schedMin !== undefined ? schedMin : 0) : (schedMin !== undefined ? schedMin : 0)}`
         const formattedCurrentTime = `${horaHoy < 10 ? '0' + horaHoy : horaHoy}:${minutoHoy < 10 ? '0' + minutoHoy : minutoHoy}`
 
         return NextResponse.json({
           success: true,
-          message: `Hora Colombia: ${formattedCurrentTime} del día ${diaHoy}. El informe automático está configurado para el día ${diaReporte} a las ${formattedSchedTime}. No se envió reporte. Se envió ping de conexión.`
+          message: `Hora Colombia: ${formattedCurrentTime} del día ${diaHoy}. El informe automático está configurado para el día ${diaReporte} a las ${formattedSchedTime}. No se envió reporte.`
         })
       }
     }
