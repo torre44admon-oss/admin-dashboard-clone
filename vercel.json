@@ -7,10 +7,6 @@
     {
       "path": "/api/cron-aviso",
       "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/ping-bot",
-      "schedule": "*/10 * * * *"
     }
   ]
 }
