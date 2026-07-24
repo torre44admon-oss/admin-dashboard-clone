@@ -73,7 +73,15 @@ export async function GET(request: Request) {
     const yaEnviadoEsteMes = config.fecha_ultimo_reporte && config.fecha_ultimo_reporte.startsWith(mesAnioHoy)
 
     if (!isManual) {
-      if (diaHoy !== diaReporte) {
+      if (yaEnviadoEsteMes) {
+        return NextResponse.json({
+          success: true,
+          message: `El informe mensual de deudores ya fue enviado para este periodo (${mesAnioHoy}).`
+        })
+      }
+
+      // Validar día y que la hora actual esté dentro de la ventana del reporte (o posterior)
+      if (diaHoy !== diaReporte || currentMinutesTotal < schedMinutesTotal) {
         const formattedSchedTime = `${(schedHour !== undefined ? schedHour : 8) < 10 ? '0' + (schedHour !== undefined ? schedHour : 8) : (schedHour !== undefined ? schedHour : 8)}:${(schedMin !== undefined ? schedMin : 0) < 10 ? '0' + (schedMin !== undefined ? schedMin : 0) : (schedMin !== undefined ? schedMin : 0)}`
         const formattedCurrentTime = `${horaHoy < 10 ? '0' + horaHoy : horaHoy}:${minutoHoy < 10 ? '0' + minutoHoy : minutoHoy}`
 
