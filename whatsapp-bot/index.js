@@ -1,10 +1,12 @@
 require('dotenv').config()
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys')
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion, initAuthCreds, BufferJSON } = require('@whiskeysockets/baileys')
 const { Boom } = require('@hapi/boom')
 const express = require('express')
 const qrcode = require('qrcode')
 const P = require('pino')
+const fs = require('fs')
 const path = require('path')
+const { createClient } = require('@supabase/supabase-js')
 
 const app = express()
 app.use(express.json())
@@ -23,8 +25,86 @@ let qrCodeData = null
 let isConnected = false
 let connectionStatus = 'disconnected'
 
+// ── Adaptador de Auth Persistente con Supabase ───────────────────
+let supabase = null
+if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
+}
+
+async function useSupabaseAuthState() {
+  if (!supabase) {
+    console.log('⚠️ Sin variables de Supabase en el bot, usando auth local de disco.')
+    return useMultiFileAuthState('auth_info_baileys')
+  }
+
+  const readData = async (id) => {
+    try {
+      const { data, error } = await supabase.from('bot_auth_session').select('data').eq('id', id).single()
+      if (error || !data) return null
+      return JSON.parse(JSON.stringify(data.data), BufferJSON.reviver)
+    } catch {
+      return null
+    }
+  }
+
+  const writeData = async (id, value) => {
+    try {
+      const serialized = JSON.parse(JSON.stringify(value, BufferJSON.replacer))
+      await supabase.from('bot_auth_session').upsert({ id, data: serialized, updated_at: new Date().toISOString() })
+    } catch (e) {
+      console.error('Error guardando creds en Supabase:', e.message)
+    }
+  }
+
+  const removeData = async (id) => {
+    try {
+      await supabase.from('bot_auth_session').delete().eq('id', id)
+    } catch (e) {
+      console.error('Error borrando creds de Supabase:', e.message)
+    }
+  }
+
+  const creds = (await readData('creds')) || initAuthCreds()
+
+  return {
+    state: {
+      creds,
+      keys: {
+        get: async (type, ids) => {
+          const data = {}
+          await Promise.all(
+            ids.map(async (id) => {
+              let value = await readData(`${type}-${id}`)
+              if (type === 'app-state-sync-key' && value) {
+                value = proto.Message.AppStateSyncKeyData.fromObject(value)
+              }
+              if (value) data[id] = value
+            })
+          )
+          return data
+        },
+        set: async (data) => {
+          const tasks = []
+          for (const category in data) {
+            for (const id in data[category]) {
+              const value = data[category][id]
+              const key = `${category}-${id}`
+              if (value) tasks.push(writeData(key, value))
+              else tasks.push(removeData(key))
+            }
+          }
+          await Promise.all(tasks)
+        }
+      }
+    },
+    saveCreds: async () => {
+      await writeData('creds', creds)
+    }
+  }
+}
+
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys')
+  const { state, saveCreds } = await useSupabaseAuthState()
   const { version } = await fetchLatestBaileysVersion()
 
   sock = makeWASocket({
@@ -79,7 +159,7 @@ function checkApiKey(req, res, next) {
 
 // ── Endpoints ───────────────────────────────────────────────────
 
-// Estado de la conexión (sin clave - para el panel)
+// Estado de la conexión
 app.get('/status', (req, res) => {
   res.json({
     connected: isConnected,
@@ -88,7 +168,7 @@ app.get('/status', (req, res) => {
   })
 })
 
-// QR para escanear (sin clave - para el panel)
+// QR para escanear
 app.get('/qr', (req, res) => {
   if (isConnected) {
     return res.send(`
@@ -118,7 +198,7 @@ app.get('/qr', (req, res) => {
   `)
 })
 
-// Listar grupos disponibles del número conectado
+// Listar grupos disponibles
 app.get('/groups', checkApiKey, async (req, res) => {
   if (!isConnected || !sock) {
     return res.status(503).json({ error: 'Bot no conectado', connected: false })
@@ -155,15 +235,17 @@ app.post('/send-group', checkApiKey, async (req, res) => {
   }
 })
 
-// Desconectar / cerrar sesión (para reconectar con otro número)
+// Desconectar / cerrar sesión
 app.post('/logout', checkApiKey, async (req, res) => {
   try {
     if (sock) await sock.logout()
     isConnected = false
     connectionStatus = 'logged_out'
     qrCodeData = null
+    if (supabase) {
+      await supabase.from('bot_auth_session').delete().neq('id', 'null')
+    }
     res.json({ success: true, message: 'Sesión cerrada. Recarga /qr para conectar nuevo número.' })
-    // Reconectar para generar nuevo QR
     setTimeout(connectToWhatsApp, 3000)
   } catch (e) {
     res.status(500).json({ error: e.message })
