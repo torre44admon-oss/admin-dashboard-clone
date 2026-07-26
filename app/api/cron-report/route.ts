@@ -168,12 +168,8 @@ export async function GET(request: Request) {
       })
     }
 
-    // 7. Construir el reporte línea por línea
-    let mensajeReporte = `*Informe de Deudores y Cartera*\n`
-    mensajeReporte += `*${nombreTorre}*\n`
-    mensajeReporte += `Fecha: ${hoyColombia.toLocaleDateString("es-CO")}\n`
-    mensajeReporte += `-----------------------------\n\n`
-
+    // 7. Construir el reporte anónimo y formal para la comunidad
+    let lineasApartamentos: string[] = []
     let totalCopropiedad = 0
     let deudoresEncontrados = 0
 
@@ -199,42 +195,51 @@ export async function GET(request: Request) {
 
       deudoresEncontrados++
       let totalUnidad = 0
-
-      mensajeReporte += `*Apartamento ${u.unidad}* (${u.propietario || "Sin Nombre"})\n`
+      let conceptos: string[] = []
 
       if (deudasMens.length > 0) {
-        const meses = deudasMens.map((m) => `${m.mes} ${m.anio}`).join(", ")
+        const meses = deudasMens.map((m) => `${String(m.mes).toLowerCase()} de ${m.anio}`).join(", ")
         const subtotalMens = deudasMens.reduce((acc, m) => acc + (Number(m.valor) || 0), 0)
         totalUnidad += subtotalMens
-        mensajeReporte += `  • Cuotas: ${meses} (${formatoPesos(subtotalMens)})\n`
+        conceptos.push(`Cuota${deudasMens.length > 1 ? "s" : ""} de ${meses}`)
       }
 
       if (deudasMult.length > 0) {
-        const multasText = deudasMult.map((m) => m.tipo_multa || "Multa").join(", ")
+        const multasText = deudasMult.map((m) => m.tipo_multa || "multa").join(", ")
         const subtotalMult = deudasMult.reduce((acc, m) => acc + (Number(m.valor) || 0), 0)
         totalUnidad += subtotalMult
-        mensajeReporte += `  • Multas: ${multasText} (${formatoPesos(subtotalMult)})\n`
+        conceptos.push(`multa de ${multasText}`)
       }
 
       if (deudasProy.length > 0) {
-        const proyectosText = deudasProy.map((p) => p.proyecto).join(", ")
+        const proyectosText = deudasProy.map((p) => p.proyecto || "proyecto").join(", ")
         const subtotalProy = deudasProy.reduce((acc, p) => acc + (Number(p.valor) || 0), 0)
         totalUnidad += subtotalProy
-        mensajeReporte += `  • Proyectos: ${proyectosText} (${formatoPesos(subtotalProy)})\n`
+        conceptos.push(`proyecto de ${proyectosText.toLowerCase()}`)
       }
 
       if (deudaAnterior > 0) {
         totalUnidad += deudaAnterior
-        mensajeReporte += `  • Adm. Anterior: ${formatoPesos(deudaAnterior)}\n`
+        conceptos.push("administración anterior")
       }
 
       totalCopropiedad += totalUnidad
-      mensajeReporte += `  *Total Deuda:* ${formatoPesos(totalUnidad)}\n`
-      mensajeReporte += `-----------------------------\n`
+      lineasApartamentos.push(`Apartamento ${u.unidad}: ${conceptos.join(", ")}.`)
     })
 
-    mensajeReporte += `\n*Total Deudores:* ${deudoresEncontrados}\n`
-    mensajeReporte += `*Cartera Total Copropiedad:* ${formatoPesos(totalCopropiedad)}\n\n`
+    const diaStr = String(hoyColombia.getDate()).padStart(2, "0")
+    const mesStr = String(hoyColombia.getMonth() + 1).padStart(2, "0")
+    const fechaFormateada = `${diaStr}/${mesStr}/${hoyColombia.getFullYear()}`
+
+    let mensajeReporte = `*INFORME GENERAL DE CARTERA*\n\n`
+    mensajeReporte += `*CONJUNTO RESIDENCIAL ALTOS DE SANTA ELENA – TORRE 44*\n`
+    mensajeReporte += `Fecha: ${fechaFormateada}\n\n`
+    mensajeReporte += `La Administración informa que, a la fecha del presente informe, existen obligaciones pendientes correspondientes a cuotas de administración, proyectos aprobados y saldos de periodos anteriores.\n\n`
+    mensajeReporte += `*Obligaciones pendientes por apartamento:*\n`
+    mensajeReporte += lineasApartamentos.join("\n") + "\n\n"
+    mensajeReporte += `*Apartamentos con obligaciones pendientes:* ${deudoresEncontrados}\n\n`
+    mensajeReporte += `*Cartera total de la copropiedad:* ${formatoPesos(totalCopropiedad)}\n\n`
+    mensajeReporte += `Se recuerda a los propietarios con obligaciones pendientes que el pago oportuno de las cuotas y proyectos aprobados es fundamental para el funcionamiento, mantenimiento y cumplimiento de los compromisos económicos de la copropiedad.\n\n`
     mensajeReporte += `_Reporte generado de forma automática por el sistema de cartera._`
 
     if (deudoresEncontrados === 0) {
