@@ -277,11 +277,12 @@ export async function GET(request: Request) {
     const anySuccess = results.some(r => r.ok)
 
     let botResult = null
-    // 8. También enviar al grupo de WhatsApp si está configurado el bot
-    try {
-      const { data: botConfig } = await supabase
-        .from("configuracion_bot")
-        .select("grupo_whatsapp_id, railway_bot_url, bot_api_key")
+    // 8. También enviar al grupo de WhatsApp si está configurado el bot y NO es prueba manual (!isManual)
+    if (!isManual) {
+      try {
+        const { data: botConfig } = await supabase
+          .from("configuracion_bot")
+          .select("grupo_whatsapp_id, railway_bot_url, bot_api_key")
         .order("id", { ascending: false })
         .limit(1)
 
@@ -306,6 +307,7 @@ export async function GET(request: Request) {
       }
     } catch (botErr: any) {
       botResult = { ok: false, error: botErr.message }
+    }
     }
 
     if ((anySuccess || botResult?.ok) && !isManual) {
