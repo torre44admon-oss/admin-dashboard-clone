@@ -217,7 +217,7 @@ export function ResumenContent({
     cargarDeudaTotal()
 
     setTodosLosPagos(combined)
-    setUltimosPagos(combined.slice(0, 5))
+    setUltimosPagos(combined.slice(0, 15))
   }
 
   useEffect(() => {
@@ -453,7 +453,7 @@ export function ResumenContent({
 
               {/* Table Content */}
               {ultimosPagos.length > 0 ? (
-                <div className="flex-1 flex flex-col justify-start mt-2 divide-y divide-[#1E293B]/30">
+                <div className="flex-1 flex flex-col justify-start mt-2 divide-y divide-[#1E293B]/30 max-h-[360px] overflow-y-auto pr-1">
                   {ultimosPagos.map((pago, index) => {
                     const apto = apartamentos.find((a) => a.unidad === pago.unidad)
                     const residente = apto ? apto.propietario : "Desconocido"

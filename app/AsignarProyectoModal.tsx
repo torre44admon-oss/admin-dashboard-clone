@@ -122,6 +122,19 @@ const asignarProyecto = async () => {
 
   if (!unidad) return
 
+  // VERIFICAR DUPLICADOS
+  const { data: existente } = await supabase
+    .from("portafolio_proyectos")
+    .select("id")
+    .eq("unidad", unidad.unidad)
+    .eq("proyecto", proyecto.t)
+    .limit(1)
+
+  if (existente && existente.length > 0) {
+    toast.error(`La unidad Apt. ${unidad.unidad} ya tiene asignado el proyecto "${proyecto.t}".`)
+    return
+  }
+
   const registro = {
     fecha,
     unidad: unidad.unidad,
