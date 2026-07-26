@@ -57,6 +57,16 @@ export function ResumenContent({
   const [recProyectosSum, setRecProyectosSum] = useState(0)
   const [deudaCarteraTotal, setDeudaCarteraTotal] = useState(0)
 
+  // Breakdown state for Deuda en Cartera card
+  const [carteraAntSum, setCarteraAntSum] = useState(0)
+  const [carteraAntCount, setCarteraAntCount] = useState(0)
+  const [mensualidadesDebSum, setMensualidadesDebSum] = useState(0)
+  const [mensualidadesDebCount, setMensualidadesDebCount] = useState(0)
+  const [multasDebSum, setMultasDebSum] = useState(0)
+  const [multasDebCount, setMultasDebCount] = useState(0)
+  const [proyectosDebSum, setProyectosDebSum] = useState(0)
+  const [proyectosDebCount, setProyectosDebCount] = useState(0)
+
   const cargarUltimosPagos = async () => {
     // 1. Fetch from mensualidades (All of them to find the latest billing period)
     const { data: todasMensualidades } = await supabase
@@ -200,41 +210,71 @@ export function ResumenContent({
     setRecMultasSum(tempMultas)
     setRecProyectosSum(tempProyectos)
 
-    // Calculate Total Deuda Copropiedad (Unificado: Cartera + Mensualidades + Multas + Proyectos)
+    // Calculate Total Deuda Copropiedad (Unificado con Desglose por Categoria y Conteo de Aptos)
     const cargarDeudaTotal = async () => {
       let totalDeuda = 0
 
       // 1. Cartera Anterior
-      const { data: carteraRows } = await supabase.from("cartera").select("deuda")
+      const { data: carteraRows } = await supabase.from("cartera").select("unidad, deuda")
+      let sumCart = 0
+      const setCart = new Set<string>()
       if (carteraRows) {
         carteraRows.forEach((row: any) => {
-          totalDeuda += Number(row.deuda) || 0
+          const v = Number(row.deuda) || 0
+          if (v > 0) {
+            sumCart += v
+            setCart.add(row.unidad)
+          }
         })
       }
+      setCarteraAntSum(sumCart)
+      setCarteraAntCount(setCart.size)
+      totalDeuda += sumCart
 
       // 2. Mensualidades Pendientes
-      const { data: mensRows } = await supabase.from("mensualidades").select("valor").eq("estado", "Pendiente")
+      const { data: mensRows } = await supabase.from("mensualidades").select("unidad, valor").eq("estado", "Pendiente")
+      let sumMens = 0
+      const setMens = new Set<string>()
       if (mensRows) {
         mensRows.forEach((row: any) => {
-          totalDeuda += Number(row.valor) || 0
+          const v = Number(row.valor) || 0
+          sumMens += v
+          setMens.add(row.unidad)
         })
       }
+      setMensualidadesDebSum(sumMens)
+      setMensualidadesDebCount(setMens.size)
+      totalDeuda += sumMens
 
       // 3. Multas Pendientes
-      const { data: multasRows } = await supabase.from("portafolio_multas").select("valor").in("estado", ["Pendiente", "Vencida"])
+      const { data: multasRows } = await supabase.from("portafolio_multas").select("unidad, valor").in("estado", ["Pendiente", "Vencida"])
+      let sumMult = 0
+      const setMult = new Set<string>()
       if (multasRows) {
         multasRows.forEach((row: any) => {
-          totalDeuda += Number(row.valor) || 0
+          const v = Number(row.valor) || 0
+          sumMult += v
+          setMult.add(row.unidad)
         })
       }
+      setMultasDebSum(sumMult)
+      setMultasDebCount(setMult.size)
+      totalDeuda += sumMult
 
       // 4. Proyectos Pendientes
-      const { data: proyectosRows } = await supabase.from("portafolio_proyectos").select("valor").eq("estado", "Pendiente")
+      const { data: proyectosRows } = await supabase.from("portafolio_proyectos").select("unidad, valor").eq("estado", "Pendiente")
+      let sumProy = 0
+      const setProy = new Set<string>()
       if (proyectosRows) {
         proyectosRows.forEach((row: any) => {
-          totalDeuda += Number(row.valor) || 0
+          const v = Number(row.valor) || 0
+          sumProy += v
+          setProy.add(row.unidad)
         })
       }
+      setProyectosDebSum(sumProy)
+      setProyectosDebCount(setProy.size)
+      totalDeuda += sumProy
 
       setDeudaCarteraTotal(totalDeuda)
     }
@@ -437,8 +477,13 @@ export function ResumenContent({
               <AlertCircle className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-slate-400 text-xs mt-3 flex items-center gap-1.5 border-t border-[#1E293B]/20 pt-2">
-            <span className="text-[11px] font-medium">Saldos vencidos pendientes de cobro</span>
+          
+          {/* Breakdown grid per category with apartment count */}
+          <div className="text-[10px] text-slate-400 mt-2 grid grid-cols-2 gap-y-1 gap-x-2 border-t border-[#1E293B]/20 pt-2">
+            <div>Cartera ({carteraAntCount} apts): <span className="text-indigo-400 font-bold">${carteraAntSum.toLocaleString("es-CO")}</span></div>
+            <div>Cuotas ({mensualidadesDebCount} apts): <span className="text-emerald-400 font-bold">${mensualidadesDebSum.toLocaleString("es-CO")}</span></div>
+            <div>Proyectos ({proyectosDebCount} apts): <span className="text-blue-400 font-bold">${proyectosDebSum.toLocaleString("es-CO")}</span></div>
+            <div>Multas ({multasDebCount} apts): <span className="text-amber-400 font-bold">${multasDebSum.toLocaleString("es-CO")}</span></div>
           </div>
         </div>
 
