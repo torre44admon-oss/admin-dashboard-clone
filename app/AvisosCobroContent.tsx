@@ -349,14 +349,14 @@ export function AvisosCobroContent({ apartamentos }: Props) {
         }
 
         cargarDatos()
-      } else {
-        setCuotaBase(null)
-        setSaldoMoraCalculado(0)
-        setMesesVencidos([])
-        setInteresMoraCalculado(0)
       }
-
-    }, [idAptoSeleccionado, mesAviso, anioAviso, apartamentos])
+    } else {
+      setCuotaBase(null)
+      setSaldoMoraCalculado(0)
+      setMesesVencidos([])
+      setInteresMoraCalculado(0)
+    }
+  }, [idAptoSeleccionado, mesAviso, anioAviso, apartamentos])
 
   const tasaMoraRef = typeof window !== "undefined" ? parseFloat(localStorage.getItem("tasa_mora") || "0") : 0
 
