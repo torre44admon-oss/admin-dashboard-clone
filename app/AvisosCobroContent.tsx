@@ -55,6 +55,7 @@ export function AvisosCobroContent({ apartamentos }: Props) {
   const [saldoMoraCalculado, setSaldoMoraCalculado] = useState<number>(0)
   const [mesesVencidos, setMesesVencidos] = useState<string[]>([])
   const [interesMoraCalculado, setInteresMoraCalculado] = useState<number>(0)
+  const [sumaMesesVencidos, setSumaMesesVencidos] = useState<number>(0)
   const [enviandoAvisos, setEnviandoAvisos] = useState(false)
 
   const enviarAvisosMasivos = async () => {
@@ -193,13 +194,18 @@ export function AvisosCobroContent({ apartamentos }: Props) {
 
           // 1. Intereses de Mensualidades (Cuotas Ordinarias) - Sin Gracia (Empieza inmediatamente)
           if (mensualidadesData) {
+            let totalSumaM = 0
             const filtrados = mensualidadesData
               .filter((m: any) => {
                 const esMesActual = String(m.mes).toLowerCase() === String(mesAviso).toLowerCase() && String(m.anio) === String(anioAviso)
+                if (!esMesActual) {
+                  totalSumaM += Number(m.valor) || 0
+                }
                 return !esMesActual
               })
               .map((m: any) => `${m.mes} ${m.anio}`)
             setMesesVencidos(filtrados)
+            setSumaMesesVencidos(totalSumaM)
 
             mensualidadesData.forEach((m: any) => {
               const esMesActual = String(m.mes).toLowerCase() === String(mesAviso).toLowerCase() && String(m.anio) === String(anioAviso)
@@ -308,55 +314,10 @@ export function AvisosCobroContent({ apartamentos }: Props) {
 
           setInteresMoraCalculado(interesAcumuladoTotal)
 
-          // CONVERTIR CUOTAS VENCIDAS, INTERESES, CARTERA ANTERIOR, MULTAS Y PROYECTOS
+          // CONVERTIR CARTERA ANTERIOR, MULTAS Y PROYECTOS A CARGOS ADICIONALES
           const cargosLista: any[] = []
 
-          // 1. Meses Vencidos (Grupo)
-          if (mensualidadesData) {
-            const mesesNombres = [
-              "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-              "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-            ]
-            const mesesPasados: string[] = []
-            let sumaMesesPasados = 0
-
-            mensualidadesData.forEach((m: any) => {
-              const esMesActual = String(m.mes).toLowerCase() === String(mesAviso).toLowerCase() && String(m.anio) === String(anioAviso)
-              const idxM = mesesNombres.findIndex(mn => mn.toLowerCase() === String(m.mes).toLowerCase())
-              const fechaM = new Date(Number(m.anio), idxM)
-              const idxVig = mesesNombres.findIndex(mn => mn.toLowerCase() === String(mesAviso).toLowerCase())
-              const fechaVig = new Date(Number(anioAviso), idxVig)
-              const esMesPasado = fechaM < fechaVig
-
-              if (!esMesActual && esMesPasado) {
-                mesesPasados.push(`${m.mes} ${m.anio}`)
-                sumaMesesPasados += Number(m.valor) || 0
-              }
-            })
-
-            if (mesesPasados.length > 0) {
-              const textoMeses = mesesPasados.length > 3 
-                ? `${mesesPasados.length} meses (${mesesPasados[0].split(" ")[0]} a ${mesesPasados[mesesPasados.length-1].split(" ")[0]})`
-                : mesesPasados.join(", ")
-
-              cargosLista.push({
-                tipo: "Cuota",
-                concepto: `Meses Vencidos (${textoMeses})`,
-                monto: sumaMesesPasados
-              })
-            }
-          }
-
-          // 2. Intereses de Mora
-          if (interesAcumuladoTotal > 0) {
-            cargosLista.push({
-              tipo: "Mora",
-              concepto: "Intereses de Mora (Ley 675)",
-              monto: interesAcumuladoTotal
-            })
-          }
-
-          // 3. Cartera Anterior
+          // 1. Cartera Anterior Pendiente
           const deudaCart = Number(carteraData?.deuda) || 0
           if (deudaCart > 0) {
             cargosLista.push({
@@ -366,7 +327,7 @@ export function AvisosCobroContent({ apartamentos }: Props) {
             })
           }
 
-          // 4. Multas y Proyectos
+          // 2. Multas y Proyectos
           (multasData || []).forEach((m: any) => {
             cargosLista.push({
               tipo: "Multa",
@@ -388,21 +349,21 @@ export function AvisosCobroContent({ apartamentos }: Props) {
         }
 
         cargarDatos()
+      } else {
+        setCuotaBase(null)
+        setSaldoMoraCalculado(0)
+        setMesesVencidos([])
+        setInteresMoraCalculado(0)
       }
 
-    } else {
-      setCuotaBase(null)
-      setSaldoMoraCalculado(0)
-      setMesesVencidos([])
-      setInteresMoraCalculado(0)
-    }
-    
-  }, [idAptoSeleccionado, mesAviso, anioAviso, apartamentos])
-  // SUMA REAL COMPLETA: Incluye la Mora de Cartera e Intereses dentro del gran total
+    }, [idAptoSeleccionado, mesAviso, anioAviso, apartamentos])
+
   const tasaMoraRef = typeof window !== "undefined" ? parseFloat(localStorage.getItem("tasa_mora") || "0") : 0
 
+  // TOTAL A PAGAR IMPECABLE
   const totalSumaNumerica =
     (cuotaBase ? cuotaBase.monto : 0) +
+    sumaMesesVencidos +
     interesMoraCalculado +
     cargosAdicionales.reduce((acc, l) => acc + l.monto, 0)
 
@@ -647,8 +608,8 @@ if (!mensExistente) {
       const montoCuota = cuotaBase?.monto ?? 20000
 
       const cargos = [
-        ...(saldoMoraCalculado > 0 ? [{ concepto: "Deuda de Mora", monto: saldoMoraCalculado }] : []),
-        ...(interesMoraCalculado > 0 ? [{ concepto: `Interés de Mora (${tasaMoraRef}%)`, monto: interesMoraCalculado }] : []),
+        ...(mesesVencidos.length > 0 ? [{ concepto: `Meses Vencidos (${mesesVencidos.length > 3 ? `${mesesVencidos.length} meses (${mesesVencidos[0].split(" ")[0]} a ${mesesVencidos[mesesVencidos.length-1].split(" ")[0]})` : mesesVencidos.join(", ")})`, monto: sumaMesesVencidos }] : []),
+        ...(interesMoraCalculado > 0 ? [{ concepto: "Intereses de Mora (Ley 675)", monto: interesMoraCalculado }] : []),
         ...cargosAdicionales.map(c => ({ concepto: c.concepto, monto: c.monto }))
       ]
 
@@ -832,18 +793,13 @@ const respuestaWhatsapp = await fetch(
 
                 {/* Meses Vencidos */}
                 {mesesVencidos.length > 0 && (
-                  <div className="px-4 py-2.5 text-xs text-amber-400 bg-amber-500/5 border-t border-[#1E293B]/20 font-medium">
-                    <span className="font-bold uppercase tracking-wider text-[10px] text-amber-500/80 mr-1.5">Meses Vencidos:</span>
-                    {mesesVencidos.join(", ")}
-                  </div>
-                )}
-
-                {/* Renglón de la Mora */}
-                {saldoMoraCalculado > 0 && (
-                  <div className="grid grid-cols-2 px-4 py-3.5 items-center text-sm bg-red-500/5">
-                    <div className="font-bold text-red-400">Deuda de Mora (Cartera)</div>
-                    <div className="text-right font-black text-red-400">
-                      $ {saldoMoraCalculado.toLocaleString("es-CO")}
+                  <div className="grid grid-cols-2 px-4 py-3.5 items-center text-sm bg-amber-500/5 border-t border-[#1E293B]/20 font-medium">
+                    <div className="text-amber-400 text-xs">
+                      <span className="font-bold uppercase tracking-wider text-[10px] text-amber-500/80 mr-1.5">Meses Vencidos:</span>
+                      {mesesVencidos.join(", ")}
+                    </div>
+                    <div className="text-right font-bold text-amber-400">
+                      $ {sumaMesesVencidos.toLocaleString("es-CO")}
                     </div>
                   </div>
                 )}
