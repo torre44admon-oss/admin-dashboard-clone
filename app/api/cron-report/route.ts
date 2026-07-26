@@ -125,8 +125,14 @@ export async function GET(request: Request) {
       .from("proyectos_asignados")
       .select("*")
       .eq("estado", "Pendiente")
+    
+    // 5. Obtener Multas Pendientes
+    const { data: multas } = await supabase
+      .from("portafolio_multas")
+      .select("*")
+      .in("estado", ["Pendiente", "Vencida"])
 
-    // 5. Obtener Cartera (Periodo Anterior)
+    // 6. Obtener Cartera (Periodo Anterior)
     const { data: cartera, error: errorCart } = await supabase
       .from("cartera")
       .select("*")
@@ -136,6 +142,14 @@ export async function GET(request: Request) {
       mensualidades.forEach((m) => {
         if (!mapaMensualidades[m.unidad]) mapaMensualidades[m.unidad] = []
         mapaMensualidades[m.unidad].push(m)
+      })
+    }
+
+    const mapaMultas: Record<string, any[]> = {}
+    if (multas) {
+      multas.forEach((m) => {
+        if (!mapaMultas[m.unidad]) mapaMultas[m.unidad] = []
+        mapaMultas[m.unidad].push(m)
       })
     }
 
@@ -154,7 +168,7 @@ export async function GET(request: Request) {
       })
     }
 
-    // 6. Construir el reporte línea por línea
+    // 7. Construir el reporte línea por línea
     let mensajeReporte = `*Informe de Deudores y Cartera*\n`
     mensajeReporte += `*${nombreTorre}*\n`
     mensajeReporte += `Fecha: ${hoyColombia.toLocaleDateString("es-CO")}\n`
@@ -167,17 +181,19 @@ export async function GET(request: Request) {
       return new Intl.NumberFormat("es-CO", {
         style: "currency",
         currency: "COP",
+        maximumFractionDigits: 0,
         minimumFractionDigits: 0
       }).format(val)
     }
 
     (unidades || []).forEach((u) => {
       const deudasMens = mapaMensualidades[u.unidad] || []
+      const deudasMult = mapaMultas[u.unidad] || []
       const deudasProy = mapaProyectos[u.unidad] || []
       const deudaAnterior = mapaCartera[u.unidad] || 0
 
       // Si no debe nada, no se incluye en el reporte
-      if (deudasMens.length === 0 && deudasProy.length === 0 && deudaAnterior === 0) {
+      if (deudasMens.length === 0 && deudasMult.length === 0 && deudasProy.length === 0 && deudaAnterior === 0) {
         return
       }
 
@@ -191,6 +207,13 @@ export async function GET(request: Request) {
         const subtotalMens = deudasMens.reduce((acc, m) => acc + (Number(m.valor) || 0), 0)
         totalUnidad += subtotalMens
         mensajeReporte += `  • Cuotas: ${meses} (${formatoPesos(subtotalMens)})\n`
+      }
+
+      if (deudasMult.length > 0) {
+        const multasText = deudasMult.map((m) => m.tipo_multa || "Multa").join(", ")
+        const subtotalMult = deudasMult.reduce((acc, m) => acc + (Number(m.valor) || 0), 0)
+        totalUnidad += subtotalMult
+        mensajeReporte += `  • Multas: ${multasText} (${formatoPesos(subtotalMult)})\n`
       }
 
       if (deudasProy.length > 0) {

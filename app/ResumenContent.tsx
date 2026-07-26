@@ -200,18 +200,42 @@ export function ResumenContent({
     setRecMultasSum(tempMultas)
     setRecProyectosSum(tempProyectos)
 
-    // Calculate Total Deuda Cartera
+    // Calculate Total Deuda Copropiedad (Unificado: Cartera + Mensualidades + Multas + Proyectos)
     const cargarDeudaTotal = async () => {
-      const { data: carteraRows } = await supabase
-        .from("cartera")
-        .select("deuda")
-
       let totalDeuda = 0
+
+      // 1. Cartera Anterior
+      const { data: carteraRows } = await supabase.from("cartera").select("deuda")
       if (carteraRows) {
         carteraRows.forEach((row: any) => {
           totalDeuda += Number(row.deuda) || 0
         })
       }
+
+      // 2. Mensualidades Pendientes
+      const { data: mensRows } = await supabase.from("mensualidades").select("valor").eq("estado", "Pendiente")
+      if (mensRows) {
+        mensRows.forEach((row: any) => {
+          totalDeuda += Number(row.valor) || 0
+        })
+      }
+
+      // 3. Multas Pendientes
+      const { data: multasRows } = await supabase.from("portafolio_multas").select("valor").in("estado", ["Pendiente", "Vencida"])
+      if (multasRows) {
+        multasRows.forEach((row: any) => {
+          totalDeuda += Number(row.valor) || 0
+        })
+      }
+
+      // 4. Proyectos Pendientes
+      const { data: proyectosRows } = await supabase.from("portafolio_proyectos").select("valor").eq("estado", "Pendiente")
+      if (proyectosRows) {
+        proyectosRows.forEach((row: any) => {
+          totalDeuda += Number(row.valor) || 0
+        })
+      }
+
       setDeudaCarteraTotal(totalDeuda)
     }
     cargarDeudaTotal()
