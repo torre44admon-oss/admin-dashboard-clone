@@ -222,12 +222,20 @@ export async function GET(request: NextRequest) {
 
               {/* Cuota Administrativa Section */}
               {(() => {
-                const adminCargos = cargos.filter((c: any) => c.concepto.startsWith("Meses Vencidos") || c.concepto.startsWith("Intereses de Mora") || c.concepto.startsWith("Cuota "))
-                const extraCargos = cargos.filter((c: any) => !c.concepto.startsWith("Meses Vencidos") && !c.concepto.startsWith("Intereses de Mora") && !c.concepto.startsWith("Cuota "))
+                const adminCargos = cargos.filter((c: any) => 
+                  c.concepto.startsWith("Meses Vencidos") || 
+                  c.concepto.startsWith("Intereses de Mora") || 
+                  c.concepto.startsWith("Cuota ")
+                )
+                const extraCargos = cargos.filter((c: any) => 
+                  !c.concepto.startsWith("Meses Vencidos") && 
+                  !c.concepto.startsWith("Intereses de Mora") && 
+                  !c.concepto.startsWith("Cuota ")
+                )
 
                 return (
                   <>
-                    <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px", width: "100%" }}>
                       <span
                         style={{
                           fontSize: "16px",
@@ -248,6 +256,7 @@ export async function GET(request: NextRequest) {
                           display: "flex",
                           flexDirection: "column",
                           overflow: "hidden",
+                          width: "100%",
                         }}
                       >
                         <div
@@ -261,8 +270,8 @@ export async function GET(request: NextRequest) {
                             borderBottom: adminCargos.length > 0 ? "1px solid #2d3748" : "none",
                           }}
                         >
-                          <span>Cuota Administrativa</span>
-                          <span style={{ fontWeight: "bold", fontSize: "26px" }}>
+                          <span style={{ flex: 1, minWidth: 0 }}>Cuota Administrativa</span>
+                          <span style={{ fontWeight: "bold", fontSize: "26px", flexShrink: 0, marginLeft: "20px" }}>
                             $ {montoCuota.toLocaleString("es-CO")}
                           </span>
                         </div>
@@ -280,8 +289,10 @@ export async function GET(request: NextRequest) {
                               color: "#ffffff",
                             }}
                           >
-                            <span>{linea.concepto}</span>
-                            <span style={{ fontWeight: "bold", fontSize: "22px" }}>
+                            <span style={{ flex: 1, minWidth: 0, paddingRight: "16px", wordBreak: "break-word" }}>
+                              {linea.concepto}
+                            </span>
+                            <span style={{ fontWeight: "bold", fontSize: "22px", flexShrink: 0, marginLeft: "20px" }}>
                               $ {parseFloat(linea.monto).toLocaleString("es-CO")}
                             </span>
                           </div>
@@ -291,7 +302,7 @@ export async function GET(request: NextRequest) {
 
                     {/* Cargos Adicionales Section */}
                     {extraCargos.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px", width: "100%" }}>
                         <span
                           style={{
                             fontSize: "16px",
@@ -312,6 +323,7 @@ export async function GET(request: NextRequest) {
                             display: "flex",
                             flexDirection: "column",
                             overflow: "hidden",
+                            width: "100%",
                           }}
                         >
                           {extraCargos.map((linea: any, idx: number) => (
@@ -327,8 +339,10 @@ export async function GET(request: NextRequest) {
                                 color: "#ffffff",
                               }}
                             >
-                              <span>{linea.concepto}</span>
-                              <span style={{ fontWeight: "bold", fontSize: "22px" }}>
+                              <span style={{ flex: 1, minWidth: 0, paddingRight: "16px", wordBreak: "break-word" }}>
+                                {linea.concepto}
+                              </span>
+                              <span style={{ fontWeight: "bold", fontSize: "22px", flexShrink: 0, marginLeft: "20px" }}>
                                 $ {parseFloat(linea.monto).toLocaleString("es-CO")}
                               </span>
                             </div>

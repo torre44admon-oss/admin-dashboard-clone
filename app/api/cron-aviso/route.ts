@@ -272,8 +272,12 @@ export async function GET(request: Request) {
           })
 
           if (mesesPasados.length > 0) {
+            const textoMeses = mesesPasados.length > 3 
+              ? `${mesesPasados.length} meses (${mesesPasados[0].split(" ")[0]} a ${mesesPasados[mesesPasados.length-1].split(" ")[0]})`
+              : mesesPasados.join(", ")
+
             cargos.push({
-              concepto: `Meses Vencidos: ${mesesPasados.join(", ")}`,
+              concepto: `Meses Vencidos (${textoMeses})`,
               monto: sumaMesesPasados
             })
           }

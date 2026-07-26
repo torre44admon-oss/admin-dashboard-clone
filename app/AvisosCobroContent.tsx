@@ -335,9 +335,13 @@ export function AvisosCobroContent({ apartamentos }: Props) {
             })
 
             if (mesesPasados.length > 0) {
+              const textoMeses = mesesPasados.length > 3 
+                ? `${mesesPasados.length} meses (${mesesPasados[0].split(" ")[0]} a ${mesesPasados[mesesPasados.length-1].split(" ")[0]})`
+                : mesesPasados.join(", ")
+
               cargosLista.push({
                 tipo: "Cuota",
-                concepto: `Meses Vencidos: ${mesesPasados.join(", ")}`,
+                concepto: `Meses Vencidos (${textoMeses})`,
                 monto: sumaMesesPasados
               })
             }
