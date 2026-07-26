@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
                 )
 
                 return (
-                  <>
+                  <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
                     <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px", width: "100%" }}>
                       <span
                         style={{
@@ -350,7 +350,7 @@ export async function GET(request: NextRequest) {
                         </div>
                       </div>
                     )}
-                  </>
+                  </div>
                 )
               })()}
             </div>
