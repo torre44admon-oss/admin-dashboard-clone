@@ -252,6 +252,7 @@ export async function GET(request: Request) {
         }
 
         const cargos: any[] = []
+        if (deudaCartera > 0) cargos.push({ concepto: "Administración Anterior", monto: deudaCartera })
         if (mensualidades) {
           mensualidades.forEach((m: any) => {
             const esMesActual = String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
@@ -260,13 +261,12 @@ export async function GET(request: Request) {
             const fechaMensualidad = new Date(Number(m.anio), indiceMesMensualidad)
             const fechaVigente = new Date(anoVigente, mesesNombres.findIndex(mn => mn.toLowerCase() === mesVigente.toLowerCase()))
             const esMesPasado = fechaMensualidad < fechaVigente
-            if (!esMesActual && esMesPasado) cargos.push({ concepto: `Membresía ${m.mes} ${m.anio}`, monto: Number(m.valor) })
+            if (!esMesActual && esMesPasado) cargos.push({ concepto: `Cuota ${m.mes} ${m.anio}`, monto: Number(m.valor) })
           })
         }
         if (multas) multas.forEach((m: any) => cargos.push({ concepto: `Multa: ${m.tipo_multa || "General"}`, monto: Number(m.valor) }))
         if (proyectos) proyectos.forEach((p: any) => cargos.push({ concepto: `Proyecto: ${p.proyecto || "General"}`, monto: Number(p.valor) }))
         if (interesMoraAcumulado > 0) cargos.push({ concepto: "Intereses de Mora (Ley 675)", monto: interesMoraAcumulado })
-        if (deudaCartera > 0) cargos.push({ concepto: "Cartera Anterior Pendiente", monto: deudaCartera })
 
         const queryParams = new URLSearchParams({
           nombreTorre, logoUrl, periodo: periodoTexto,

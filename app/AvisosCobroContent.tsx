@@ -308,21 +308,62 @@ export function AvisosCobroContent({ apartamentos }: Props) {
 
           setInteresMoraCalculado(interesAcumuladoTotal)
 
-          // CONVERTIR MULTAS Y PROYECTOS PENDIENTES PARA EL RECIBO DE COBRO
-          const multasConvertidas = (multasData || []).map((m: any) => ({
-            tipo: "Multa",
-            concepto: m.tipo_multa,
-            descripcion: m.descripcion,
-            monto: Number(String(m.valor).replace(/[^0-9]/g, "")) || 0
-          }))
+          // CONVERTIR CARTERA ANTERIOR, CUOTAS PASADAS, MULTAS Y PROYECTOS PENDIENTES
+          const cargosLista: any[] = []
 
-          const proyectosConvertidos = (proyectosData || []).map((p: any) => ({
-            tipo: "Proyecto",
-            concepto: p.proyecto,
-            monto: Number(p.valor) || 0
-          }))
+          // 1. Cartera Anterior
+          const deudaCart = Number(carteraData?.deuda) || 0
+          if (deudaCart > 0) {
+            cargosLista.push({
+              tipo: "Cartera",
+              concepto: "Administración Anterior",
+              monto: deudaCart
+            })
+          }
 
-          setCargosAdicionales([...multasConvertidas, ...proyectosConvertidos])
+          // 2. Cuotas Pasadas Vencidas
+          if (mensualidadesData) {
+            const mesesNombres = [
+              "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+              "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+            ]
+            mensualidadesData.forEach((m: any) => {
+              const esMesActual = String(m.mes).toLowerCase() === String(mesAviso).toLowerCase() && String(m.anio) === String(anioAviso)
+              const idxM = mesesNombres.findIndex(mn => mn.toLowerCase() === String(m.mes).toLowerCase())
+              const fechaM = new Date(Number(m.anio), idxM)
+              const idxVig = mesesNombres.findIndex(mn => mn.toLowerCase() === String(mesAviso).toLowerCase())
+              const fechaVig = new Date(Number(anioAviso), idxVig)
+              const esMesPasado = fechaM < fechaVig
+
+              if (!esMesActual && esMesPasado) {
+                cargosLista.push({
+                  tipo: "Cuota",
+                  concepto: `Cuota ${m.mes} ${m.anio}`,
+                  monto: Number(m.valor) || 0
+                })
+              }
+            })
+          }
+
+          // 3. Multas y Proyectos
+          (multasData || []).forEach((m: any) => {
+            cargosLista.push({
+              tipo: "Multa",
+              concepto: `Multa: ${m.tipo_multa || "General"}`,
+              descripcion: m.descripcion,
+              monto: Number(String(m.valor).replace(/[^0-9]/g, "")) || 0
+            })
+          });
+
+          (proyectosData || []).forEach((p: any) => {
+            cargosLista.push({
+              tipo: "Proyecto",
+              concepto: `Proyecto: ${p.proyecto || "General"}`,
+              monto: Number(p.valor) || 0
+            })
+          });
+
+          setCargosAdicionales(cargosLista)
         }
 
         cargarDatos()
@@ -341,7 +382,6 @@ export function AvisosCobroContent({ apartamentos }: Props) {
 
   const totalSumaNumerica =
     (cuotaBase ? cuotaBase.monto : 0) +
-    saldoMoraCalculado +
     interesMoraCalculado +
     cargosAdicionales.reduce((acc, l) => acc + l.monto, 0)
 
