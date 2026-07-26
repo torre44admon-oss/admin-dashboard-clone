@@ -220,87 +220,125 @@ export async function GET(request: NextRequest) {
                 </div>
               </div>
 
-              {/* Cuota Administrativa */}
-              <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px" }}>
-                <span
-                  style={{
-                    fontSize: "16px",
-                    color: "#94a3b8",
-                    marginBottom: "14px",
-                    letterSpacing: "1px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  CUOTA ADMINISTRATIVA
-                </span>
+              {/* Cuota Administrativa Section */}
+              {(() => {
+                const adminCargos = cargos.filter((c: any) => c.concepto.startsWith("Meses Vencidos") || c.concepto.startsWith("Intereses de Mora") || c.concepto.startsWith("Cuota "))
+                const extraCargos = cargos.filter((c: any) => !c.concepto.startsWith("Meses Vencidos") && !c.concepto.startsWith("Intereses de Mora") && !c.concepto.startsWith("Cuota "))
 
-                <div
-                  style={{
-                    border: "1px solid #2d3748",
-                    borderRadius: "22px",
-                    padding: "24px 30px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    fontSize: "22px",
-                    color: "#ffffff",
-                    backgroundColor: "#1e293b",
-                  }}
-                >
-                  <span>Cuota Administrativa</span>
-                  <span style={{ fontWeight: "bold", fontSize: "26px" }}>
-                    $ {montoCuota.toLocaleString("es-CO")}
-                  </span>
-                </div>
-              </div>
-
-              {/* Cargos Adicionales */}
-              {cargos.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px" }}>
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      color: "#94a3b8",
-                      marginBottom: "14px",
-                      letterSpacing: "1px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    CARGOS ADICIONALES
-                  </span>
-
-                  <div
-                    style={{
-                      border: "1px solid #2d3748",
-                      borderRadius: "22px",
-                      backgroundColor: "#1e293b",
-                      display: "flex",
-                      flexDirection: "column",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {cargos.map((linea, idx) => (
-                      <div
-                        key={idx}
+                return (
+                  <>
+                    <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px" }}>
+                      <span
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "22px 30px",
-                          borderBottom: idx !== cargos.length - 1 ? "1px solid #2d3748" : "none",
-                          fontSize: "20px",
-                          color: "#ffffff",
+                          fontSize: "16px",
+                          color: "#94a3b8",
+                          marginBottom: "14px",
+                          letterSpacing: "1px",
+                          fontWeight: "bold",
                         }}
                       >
-                        <span>{linea.concepto}</span>
-                        <span style={{ fontWeight: "bold", fontSize: "22px" }}>
-                          $ {parseFloat(linea.monto).toLocaleString("es-CO")}
-                        </span>
+                        CUOTA ADMINISTRATIVA
+                      </span>
+
+                      <div
+                        style={{
+                          border: "1px solid #2d3748",
+                          borderRadius: "22px",
+                          backgroundColor: "#1e293b",
+                          display: "flex",
+                          flexDirection: "column",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "22px 30px",
+                            fontSize: "22px",
+                            color: "#ffffff",
+                            borderBottom: adminCargos.length > 0 ? "1px solid #2d3748" : "none",
+                          }}
+                        >
+                          <span>Cuota Administrativa</span>
+                          <span style={{ fontWeight: "bold", fontSize: "26px" }}>
+                            $ {montoCuota.toLocaleString("es-CO")}
+                          </span>
+                        </div>
+
+                        {adminCargos.map((linea: any, idx: number) => (
+                          <div
+                            key={idx}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "22px 30px",
+                              borderBottom: idx !== adminCargos.length - 1 ? "1px solid #2d3748" : "none",
+                              fontSize: "20px",
+                              color: "#ffffff",
+                            }}
+                          >
+                            <span>{linea.concepto}</span>
+                            <span style={{ fontWeight: "bold", fontSize: "22px" }}>
+                              $ {parseFloat(linea.monto).toLocaleString("es-CO")}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </div>
+
+                    {/* Cargos Adicionales Section */}
+                    {extraCargos.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", marginBottom: "40px" }}>
+                        <span
+                          style={{
+                            fontSize: "16px",
+                            color: "#94a3b8",
+                            marginBottom: "14px",
+                            letterSpacing: "1px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          CARGOS ADICIONALES
+                        </span>
+
+                        <div
+                          style={{
+                            border: "1px solid #2d3748",
+                            borderRadius: "22px",
+                            backgroundColor: "#1e293b",
+                            display: "flex",
+                            flexDirection: "column",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {extraCargos.map((linea: any, idx: number) => (
+                            <div
+                              key={idx}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "22px 30px",
+                                borderBottom: idx !== extraCargos.length - 1 ? "1px solid #2d3748" : "none",
+                                fontSize: "20px",
+                                color: "#ffffff",
+                              }}
+                            >
+                              <span>{linea.concepto}</span>
+                              <span style={{ fontWeight: "bold", fontSize: "22px" }}>
+                                $ {parseFloat(linea.monto).toLocaleString("es-CO")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column" }}>

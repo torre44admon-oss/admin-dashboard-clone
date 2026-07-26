@@ -308,25 +308,18 @@ export function AvisosCobroContent({ apartamentos }: Props) {
 
           setInteresMoraCalculado(interesAcumuladoTotal)
 
-          // CONVERTIR CARTERA ANTERIOR, CUOTAS PASADAS, MULTAS Y PROYECTOS PENDIENTES
+          // CONVERTIR CUOTAS VENCIDAS, INTERESES, CARTERA ANTERIOR, MULTAS Y PROYECTOS
           const cargosLista: any[] = []
 
-          // 1. Cartera Anterior
-          const deudaCart = Number(carteraData?.deuda) || 0
-          if (deudaCart > 0) {
-            cargosLista.push({
-              tipo: "Cartera",
-              concepto: "Administración Anterior",
-              monto: deudaCart
-            })
-          }
-
-          // 2. Cuotas Pasadas Vencidas
+          // 1. Meses Vencidos (Grupo)
           if (mensualidadesData) {
             const mesesNombres = [
               "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
               "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
             ]
+            const mesesPasados: string[] = []
+            let sumaMesesPasados = 0
+
             mensualidadesData.forEach((m: any) => {
               const esMesActual = String(m.mes).toLowerCase() === String(mesAviso).toLowerCase() && String(m.anio) === String(anioAviso)
               const idxM = mesesNombres.findIndex(mn => mn.toLowerCase() === String(m.mes).toLowerCase())
@@ -336,16 +329,40 @@ export function AvisosCobroContent({ apartamentos }: Props) {
               const esMesPasado = fechaM < fechaVig
 
               if (!esMesActual && esMesPasado) {
-                cargosLista.push({
-                  tipo: "Cuota",
-                  concepto: `Cuota ${m.mes} ${m.anio}`,
-                  monto: Number(m.valor) || 0
-                })
+                mesesPasados.push(`${m.mes} ${m.anio}`)
+                sumaMesesPasados += Number(m.valor) || 0
               }
+            })
+
+            if (mesesPasados.length > 0) {
+              cargosLista.push({
+                tipo: "Cuota",
+                concepto: `Meses Vencidos: ${mesesPasados.join(", ")}`,
+                monto: sumaMesesPasados
+              })
+            }
+          }
+
+          // 2. Intereses de Mora
+          if (interesAcumuladoTotal > 0) {
+            cargosLista.push({
+              tipo: "Mora",
+              concepto: "Intereses de Mora (Ley 675)",
+              monto: interesAcumuladoTotal
             })
           }
 
-          // 3. Multas y Proyectos
+          // 3. Cartera Anterior
+          const deudaCart = Number(carteraData?.deuda) || 0
+          if (deudaCart > 0) {
+            cargosLista.push({
+              tipo: "Cartera",
+              concepto: "Cartera Anterior Pendiente",
+              monto: deudaCart
+            })
+          }
+
+          // 4. Multas y Proyectos
           (multasData || []).forEach((m: any) => {
             cargosLista.push({
               tipo: "Multa",

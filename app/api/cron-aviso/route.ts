@@ -252,21 +252,45 @@ export async function GET(request: Request) {
         }
 
         const cargos: any[] = []
-        if (deudaCartera > 0) cargos.push({ concepto: "Administración Anterior", monto: deudaCartera })
+
+        // 1. Grupos de Cuotas Vencidas (Meses Vencidos)
         if (mensualidades) {
+          const mesesPasados: string[] = []
+          let sumaMesesPasados = 0
+
           mensualidades.forEach((m: any) => {
             const esMesActual = String(m.mes).toLowerCase() === mesVigente.toLowerCase() && Number(m.anio) === anoVigente
-            // Solo mostrar mensualidades PASADAS como cargo (no el mes actual ni meses futuros)
             const indiceMesMensualidad = mesesNombres.findIndex(mn => mn.toLowerCase() === String(m.mes).toLowerCase())
             const fechaMensualidad = new Date(Number(m.anio), indiceMesMensualidad)
             const fechaVigente = new Date(anoVigente, mesesNombres.findIndex(mn => mn.toLowerCase() === mesVigente.toLowerCase()))
             const esMesPasado = fechaMensualidad < fechaVigente
-            if (!esMesActual && esMesPasado) cargos.push({ concepto: `Cuota ${m.mes} ${m.anio}`, monto: Number(m.valor) })
+
+            if (!esMesActual && esMesPasado) {
+              mesesPasados.push(`${m.mes} ${m.anio}`)
+              sumaMesesPasados += Number(m.valor) || 0
+            }
+          })
+
+          if (mesesPasados.length > 0) {
+            cargos.push({
+              concepto: `Meses Vencidos: ${mesesPasados.join(", ")}`,
+              monto: sumaMesesPasados
+            })
+          }
+        }
+
+        // 2. Intereses de Mora
+        if (interesMoraAcumulado > 0) {
+          cargos.push({
+            concepto: "Intereses de Mora (Ley 675)",
+            monto: interesMoraAcumulado
           })
         }
+
+        // 3. Cargos Adicionales (Cartera Anterior, Multas, Proyectos)
+        if (deudaCartera > 0) cargos.push({ concepto: "Cartera Anterior Pendiente", monto: deudaCartera })
         if (multas) multas.forEach((m: any) => cargos.push({ concepto: `Multa: ${m.tipo_multa || "General"}`, monto: Number(m.valor) }))
         if (proyectos) proyectos.forEach((p: any) => cargos.push({ concepto: `Proyecto: ${p.proyecto || "General"}`, monto: Number(p.valor) }))
-        if (interesMoraAcumulado > 0) cargos.push({ concepto: "Intereses de Mora (Ley 675)", monto: interesMoraAcumulado })
 
         const queryParams = new URLSearchParams({
           nombreTorre, logoUrl, periodo: periodoTexto,
