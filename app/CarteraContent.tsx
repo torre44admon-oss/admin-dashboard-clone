@@ -314,6 +314,8 @@ cerrarModal();
           {apartamentos?.map((apto) => {
             const isOpen = tarjetasAbiertas.includes(apto.unidad);
             const movs = historial.filter((m) => m.unidad === apto.unidad);
+            const deudaApto = deudas[apto.unidad] || 0;
+
             return (
               <div 
                 key={apto.unidad} 
@@ -329,8 +331,17 @@ cerrarModal();
                       Propietario: <span className="text-slate-200 capitalize font-medium">{apto.propietario}</span>
                     </p>
                   </div>
-                  <div className="text-slate-400 p-1">
-                    {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  <div className="flex items-center gap-4">
+                    <span className={`text-sm font-extrabold px-3 py-1 rounded-xl border ${
+                      deudaApto > 0 
+                        ? "bg-red-500/10 text-red-400 border-red-500/20" 
+                        : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    }`}>
+                      {deudaApto > 0 ? `$ ${deudaApto.toLocaleString("es-CO")}` : "Al día"}
+                    </span>
+                    <div className="text-slate-400 p-1">
+                      {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                    </div>
                   </div>
                 </div>
 
