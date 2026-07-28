@@ -115,10 +115,10 @@ export function ComunicadosContent() {
             </button>
             <button
               type="button"
-              onClick={() => setMensaje("Cordial saludo a todos los propietarios. Se les convoca a la próxima Asamblea General de la Copropiedad el próximo domingo a las 10:00 AM en el área común. Su asistencia y puntualidad es fundamental.")}
+              onClick={() => setMensaje(`CONVOCATORIA A ASAMBLEA GENERAL DE COPROPIETARIOS\n\nCordial saludo a todos los propietarios.\n\nPor medio del presente, se convoca a la próxima Asamblea General de la Copropiedad, que se llevará a cabo el próximo sábado a las 6:30 p.m. en el área común de zonas verdes del conjunto.\n\nSu asistencia y puntualidad son fundamentales para tratar los temas de interés de la comunidad y tomar decisiones importantes para la copropiedad.\n\nSe recuerda que la no asistencia sin causa justificada dará lugar a una multa de $35.000 COP, de acuerdo con lo establecido en el reglamento de la copropiedad.\n\nAgradecemos su compromiso y participación.\nAdministración – Torre 44`)}
               className="bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
             >
-              🏛️ Convocatoria a Asamblea
+              🏛️ Convocatoria a Asamblea ($35k Multa)
             </button>
             <button
               type="button"
