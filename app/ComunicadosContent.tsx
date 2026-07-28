@@ -102,6 +102,41 @@ export function ComunicadosContent() {
           <p className="whitespace-pre-wrap">{mensaje || <span className="text-slate-600 italic">El comunicado aparecerá aquí...</span>}</p>
         </div>
 
+        {/* Plantillas Rápidas */}
+        <div className="mb-4">
+          <p className="text-slate-400 text-xs font-semibold mb-2">Plantillas Rápidas:</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setMensaje("Se informa a todos los copropietarios que el próximo sábado habrá mantenimiento y suspensión del servicio de agua de 8:00 AM a 12:00 PM. Por favor tomar las precauciones necesarias.")}
+              className="bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+            >
+              🛠️ Corte de Agua / Mantenimiento
+            </button>
+            <button
+              type="button"
+              onClick={() => setMensaje("Cordial saludo a todos los propietarios. Se les convoca a la próxima Asamblea General de la Copropiedad el próximo domingo a las 10:00 AM en el área común. Su asistencia y puntualidad es fundamental.")}
+              className="bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+            >
+              🏛️ Convocatoria a Asamblea
+            </button>
+            <button
+              type="button"
+              onClick={() => setMensaje("Recordatorio cordial de convivencia: Se solicita mantener la basura en bolsas bien cerradas en los horarios estipulados, así como moderar el volumen del sonido y mantener a las mascotas con correa en áreas comunes.")}
+              className="bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+            >
+              🚨 Normas de Convivencia
+            </button>
+            <button
+              type="button"
+              onClick={() => setMensaje("Se les recuerda a los residentes con obligaciones pendientes realizar sus abonos o ponerse al día con la administración para garantizar el mantenimiento continuo del condominio.")}
+              className="bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
+            >
+              💰 Recordatorio de Pago
+            </button>
+          </div>
+        </div>
+
         <textarea
           value={mensaje}
           onChange={e => setMensaje(e.target.value)}
