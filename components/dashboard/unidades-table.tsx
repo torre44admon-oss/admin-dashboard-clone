@@ -13,51 +13,112 @@ interface UnidadesTableProps {
   onAdd: () => void
 }
 
+interface DetallePago {
+  tienePendiente: boolean
+  valorPendiente: number
+  mesesVencidos: string[]
+  carteraAnterior: number
+  proyectosPendientes: string[]
+  multasPendientes: string[]
+}
+
 export function UnidadesTable({ unidades, adminMode, onDelete, onEdit, onAdd }: UnidadesTableProps) {
-  const [datosPago, setDatosPago] = useState<Record<string, { tienePendiente: boolean, valorPendiente: number }>>({})
+  const [datosPago, setDatosPago] = useState<Record<string, DetallePago>>({})
   const [cargando, setCargando] = useState(true)
 
   const cargarDatosPago = async () => {
     try {
-      // Fetch pending monthly payments
+      // 1. Mensualidades pendientes
       const { data: mensualidadesData } = await supabase
         .from("mensualidades")
-        .select("unidad, valor, estado")
+        .select("unidad, valor, mes, anio, estado")
         .eq("estado", "Pendiente")
 
-      // Fetch outstanding debt
+      // 2. Cartera anterior
       const { data: carteraData } = await supabase
         .from("cartera")
         .select("unidad, deuda")
 
-      const map: Record<string, { tienePendiente: boolean, valorPendiente: number }> = {}
+      // 3. Proyectos pendientes
+      const { data: proyectosData } = await supabase
+        .from("portafolio_proyectos")
+        .select("unidad, proyecto, valor, estado")
+        .eq("estado", "Pendiente")
+
+      // 4. Multas pendientes
+      const { data: multasData } = await supabase
+        .from("portafolio_multas")
+        .select("unidad, tipo_multa, valor, estado")
+        .in("estado", ["Pendiente", "Vencida"])
+
+      const map: Record<string, DetallePago> = {}
 
       // Initialize defaults
       unidades.forEach((u) => {
-        map[u.unidad] = { tienePendiente: false, valorPendiente: 0 }
+        map[u.unidad] = {
+          tienePendiente: false,
+          valorPendiente: 0,
+          mesesVencidos: [],
+          carteraAnterior: 0,
+          proyectosPendientes: [],
+          multasPendientes: []
+        }
       })
 
-      // Apply portfolio debt
+      // Apply cartera anterior
       if (carteraData) {
         carteraData.forEach((c) => {
           const deudaNum = Number(c.deuda) || 0
           if (deudaNum > 0) {
+            const current = map[c.unidad] || { tienePendiente: false, valorPendiente: 0, mesesVencidos: [], carteraAnterior: 0, proyectosPendientes: [], multasPendientes: [] }
             map[c.unidad] = {
+              ...current,
               tienePendiente: true,
-              valorPendiente: deudaNum
+              valorPendiente: current.valorPendiente + deudaNum,
+              carteraAnterior: deudaNum
             }
           }
         })
       }
 
-      // Overlay/Add pending monthly fees
+      // Apply mensualidades pendientes
       if (mensualidadesData) {
         mensualidadesData.forEach((m) => {
-          const current = map[m.unidad] || { tienePendiente: false, valorPendiente: 0 }
+          const current = map[m.unidad] || { tienePendiente: false, valorPendiente: 0, mesesVencidos: [], carteraAnterior: 0, proyectosPendientes: [], multasPendientes: [] }
           const valorNum = Number(m.valor) || 20000
           map[m.unidad] = {
+            ...current,
             tienePendiente: true,
-            valorPendiente: current.valorPendiente + valorNum
+            valorPendiente: current.valorPendiente + valorNum,
+            mesesVencidos: [...current.mesesVencidos, `${m.mes}`]
+          }
+        })
+      }
+
+      // Apply proyectos pendientes
+      if (proyectosData) {
+        proyectosData.forEach((p) => {
+          const current = map[p.unidad] || { tienePendiente: false, valorPendiente: 0, mesesVencidos: [], carteraAnterior: 0, proyectosPendientes: [], multasPendientes: [] }
+          const valorNum = Number(p.valor) || 0
+          map[p.unidad] = {
+            ...current,
+            tienePendiente: true,
+            valorPendiente: current.valorPendiente + valorNum,
+            proyectosPendientes: [...current.proyectosPendientes, p.proyecto]
+          }
+        })
+      }
+
+      // Apply multas pendientes
+      if (multasData) {
+        multasData.forEach((m) => {
+          const current = map[m.unidad] || { tienePendiente: false, valorPendiente: 0, mesesVencidos: [], carteraAnterior: 0, proyectosPendientes: [], multasPendientes: [] }
+          const valorNum = Number(m.valor) || 0
+          map[m.unidad] = {
+            ...current,
+            tienePendiente: true,
+            valorPendiente: current.valorPendiente + valorNum,
+            multasPendientes: [...current.multasPendientes, m.tipo_multa]
           }
         })
       }
@@ -182,13 +243,39 @@ export function UnidadesTable({ unidades, adminMode, onDelete, onEdit, onAdd }: 
                       </div>
 
                       {/* CARD MIDDLE */}
-                      <div className="mt-3 space-y-1">
+                      <div className="mt-3 space-y-1.5">
                         <div className="text-xs text-slate-400 truncate">
                           Propietario: <span className="text-slate-200 capitalize font-medium">{unidad.propietario}</span>
                         </div>
                         <div className="text-[11px] text-slate-500 truncate">
                           Tel: <span className="text-slate-400 font-medium">{unidad.telefono || "Sin teléfono"}</span>
                         </div>
+
+                        {/* CONCEPT BADGES */}
+                        {infoPago.tienePendiente && (
+                          <div className="flex flex-wrap gap-1 pt-1.5">
+                            {infoPago.mesesVencidos.length > 0 && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Cuotas ({infoPago.mesesVencidos.join(", ")})
+                              </span>
+                            )}
+                            {infoPago.carteraAnterior > 0 && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                Cartera (${infoPago.carteraAnterior.toLocaleString("es-CO")})
+                              </span>
+                            )}
+                            {infoPago.proyectosPendientes.length > 0 && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                Proy ({infoPago.proyectosPendientes.join(", ")})
+                              </span>
+                            )}
+                            {infoPago.multasPendientes.length > 0 && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                Multa ({infoPago.multasPendientes.join(", ")})
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* CARD FOOTER */}
@@ -198,9 +285,9 @@ export function UnidadesTable({ unidades, adminMode, onDelete, onEdit, onAdd }: 
                             infoPago.tienePendiente ? "text-amber-500" : "text-emerald-400"
                           }`}
                         >
-                          {infoPago.tienePendiente ? "Pago Pendiente" : "Al día"}
+                          {infoPago.tienePendiente ? "Deuda Pendiente" : "Al día"}
                         </span>
-                        <span className="text-slate-400 font-bold text-[11px]">
+                        <span className={`font-extrabold text-[12px] ${infoPago.tienePendiente ? "text-rose-400" : "text-emerald-400"}`}>
                           $ {infoPago.valorPendiente.toLocaleString("es-CO")}
                         </span>
                       </div>
