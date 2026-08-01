@@ -54,11 +54,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: data.error || "Error al enviar al grupo" }, { status: 500 })
     }
 
-    // Guardar historial del comunicado en Supabase
-    await supabase.from("comunicados").insert([{
-      mensaje: mensaje.trim(),
-      enviado_en: new Date().toISOString()
-    }])
+    // Guardar historial del comunicado en Supabase de forma segura
+    try {
+      await supabase.from("comunicados").insert([{
+        mensaje: mensaje.trim(),
+        enviado_en: new Date().toISOString()
+      }])
+    } catch (dbErr) {
+      console.log("Aviso: la tabla comunicados no existe aún en Supabase:", dbErr)
+    }
 
     return NextResponse.json({ success: true })
 

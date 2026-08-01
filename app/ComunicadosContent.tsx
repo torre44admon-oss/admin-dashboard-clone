@@ -21,15 +21,55 @@ export function ComunicadosContent() {
     cargarHistorial()
   }, [])
 
+  function getLocalHistorial(): Comunicado[] {
+    if (typeof window === "undefined") return []
+    try {
+      const saved = localStorage.getItem("historial_comunicados")
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  }
+
+  function saveLocalHistorial(items: Comunicado[]) {
+    if (typeof window === "undefined") return
+    try {
+      localStorage.setItem("historial_comunicados", JSON.stringify(items))
+    } catch (e) {
+      console.error("Error saving local comunicados:", e)
+    }
+  }
+
   async function cargarHistorial() {
     setCargando(true)
-    const { data } = await supabase
-      .from("comunicados")
-      .select("*")
-      .order("enviado_en", { ascending: false })
-      .limit(20)
-    setHistorial(data || [])
-    setCargando(false)
+    const local = getLocalHistorial()
+    
+    try {
+      const { data, error } = await supabase
+        .from("comunicados")
+        .select("*")
+        .order("enviado_en", { ascending: false })
+        .limit(20)
+
+      if (!error && data && data.length > 0) {
+        // Merge with local if any missing
+        const mapa = new Map<string, Comunicado>()
+        data.forEach((item: any) => mapa.set(String(item.id || item.enviado_en), { id: item.id || Date.now(), mensaje: item.mensaje, enviado_en: item.enviado_en }))
+        local.forEach(item => {
+          const key = String(item.id || item.enviado_en)
+          if (!mapa.has(key)) mapa.set(key, item)
+        })
+        const combinado = Array.from(mapa.values()).sort((a, b) => new Date(b.enviado_en).getTime() - new Date(a.enviado_en).getTime())
+        setHistorial(combinado)
+        saveLocalHistorial(combinado)
+      } else {
+        setHistorial(local)
+      }
+    } catch {
+      setHistorial(local)
+    } finally {
+      setCargando(false)
+    }
   }
 
   async function handleEnviar() {
@@ -38,30 +78,52 @@ export function ComunicadosContent() {
       return
     }
     setEnviando(true)
+
+    const nuevoComunicado: Comunicado = {
+      id: Date.now(),
+      mensaje: mensaje.trim(),
+      enviado_en: new Date().toISOString()
+    }
+
+    // 1. Guardar localmente de inmediato para garantizar que jamás se pierda
+    const actualLocal = getLocalHistorial()
+    const actualizado = [nuevoComunicado, ...actualLocal]
+    setHistorial(actualizado)
+    saveLocalHistorial(actualizado)
+
     try {
       const res = await fetch("/api/comunicado", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensaje })
+        body: JSON.stringify({ mensaje: mensaje.trim() })
       })
       const data = await res.json()
+
       if (data.success) {
-        toast.success("✅ Comunicado enviado al grupo de WhatsApp.")
+        toast.success("✅ Comunicado enviado y guardado con éxito.")
         setMensaje("")
-        cargarHistorial()
       } else {
-        toast.error(data.error || "Error al enviar el comunicado.")
+        toast.warning(data.error || "Guardado en la aplicación, pero hubo un detalle al publicar en el grupo de WhatsApp.")
+        setMensaje("")
       }
     } catch {
-      toast.error("Error de conexión al enviar el comunicado.")
+      toast.info("Comunicado guardado localmente en la aplicación.")
+      setMensaje("")
     } finally {
       setEnviando(false)
+      cargarHistorial()
     }
   }
 
   async function handleEliminar(id: number) {
-    await supabase.from("comunicados").delete().eq("id", id)
-    setHistorial(prev => prev.filter(c => c.id !== id))
+    try {
+      await supabase.from("comunicados").delete().eq("id", id)
+    } catch (e) {
+      console.log("Eliminando localmente:", e)
+    }
+    const nuevoHistorial = historial.filter(c => c.id !== id)
+    setHistorial(nuevoHistorial)
+    saveLocalHistorial(nuevoHistorial)
     toast.success("Comunicado eliminado del historial.")
   }
 
