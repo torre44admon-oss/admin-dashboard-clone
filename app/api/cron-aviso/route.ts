@@ -339,35 +339,15 @@ export async function GET(request: Request) {
           finalImageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/640px-WhatsApp.svg.png"
         }
 
-        // Intentar envío vía Bot de Baileys de la copropiedad
-        const jidIndividual = `${telefonoClean}@s.whatsapp.net`
-        let resWhatsapp = await fetch(`${bot.railway_bot_url}/send-group`, {
+        // Enviar aviso masivo individual strictly a través de tu API Oficial de Meta (/api/whatsapp)
+        const resWhatsapp = await fetch(`${origin}/api/whatsapp`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": bot.bot_api_key
-          },
-          body: JSON.stringify({
-            groupId: jidIndividual,
-            message: msgText,
-            imageUrl: finalImageUrl
-          })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ telefono: telefonoClean, mensaje: msgText, imageUrl: finalImageUrl })
         })
+        const dataWhatsapp = await resWhatsapp.json()
 
-        let dataWhatsapp: any = {}
-        try {
-          dataWhatsapp = await resWhatsapp.json()
-        } catch {
-          // Fallback a API WhatsApp si Baileys no responde
-          resWhatsapp = await fetch(`${origin}/api/whatsapp`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ telefono: telefonoClean, mensaje: msgText, imageUrl: finalImageUrl })
-          })
-          try { dataWhatsapp = await resWhatsapp.json() } catch { dataWhatsapp = {} }
-        }
-
-        const enviado = resWhatsapp.ok && (dataWhatsapp?.success !== false || dataWhatsapp?.messages?.[0]?.id)
+        const enviado = resWhatsapp.ok && (dataWhatsapp?.messages?.[0]?.id || dataWhatsapp?.contacts?.[0] || dataWhatsapp?.success !== false)
         if (enviado) {
           resultados.push({ unidad: u.unidad, success: true, ref: dataWhatsapp?.messages?.[0]?.id, telefono: telefonoClean, imageUrl: finalImageUrl, metaContacto: dataWhatsapp?.contacts?.[0]?.wa_id })
 

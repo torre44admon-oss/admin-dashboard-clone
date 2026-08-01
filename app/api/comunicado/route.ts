@@ -62,21 +62,16 @@ export async function POST(request: Request) {
     if (unidadDestino && telefonoDestino) {
       let telClean = String(telefonoDestino).replace(/[^0-9]/g, "")
       if (telClean.length === 10 && !telClean.startsWith("57")) telClean = "57" + telClean
-      const jid = `${telClean}@s.whatsapp.net`
 
-      const payload: any = {
-        groupId: jid,
-        message: mensajeFormateado
-      }
-      if (imageUrl) payload.imageUrl = imageUrl
-
-      res = await fetch(`${bot.railway_bot_url}/send-group`, {
+      // Enviar notificación privada individual SÍ O SÍ a través de tu API Oficial de Meta
+      res = await fetch(`${origin}/api/whatsapp`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": bot.bot_api_key
-        },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telefono: telClean,
+          mensaje: mensajeFormateado,
+          imageUrl: imageUrl || undefined
+        })
       })
     } else {
       // Enviar al grupo vía bot de Baileys
