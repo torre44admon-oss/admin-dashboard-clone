@@ -16,7 +16,8 @@ import {
   FolderKanban,
   Wallet,
   LogOut,
-  Megaphone
+  Megaphone,
+  MessageSquare
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -30,6 +31,7 @@ export type PageType =
   | "configuracion"
   | "gestion-cartera"
   | "comunicados"
+  | "notificaciones-personales"
 
 interface SidebarProps {
   currentPage: PageType
@@ -63,8 +65,14 @@ const mainMenuItems: {
 
   {
     icon: Megaphone,
-    label: "Comunicados",
+    label: "Comunicados Grupo",
     page: "comunicados"
+  },
+
+  {
+    icon: MessageSquare,
+    label: "Notificaciones Privadas",
+    page: "notificaciones-personales"
   },
 ]
 

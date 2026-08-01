@@ -25,7 +25,8 @@ import { MultasContent } from "./MultasContent"
 import { ProyectosContent } from "./ProyectosContent"
 import { ConfiguracionContent } from "./ConfiguracionContent"
 import { CarteraContent } from "./CarteraContent"
-import { ComunicadosContent } from "./ComunicadosContent"
+import { ComunicadosContent } from "@/app/ComunicadosContent"
+import { NotificacionesPersonalesContent } from "@/app/NotificacionesPersonalesContent"
 
 export default function Dashboard() {
 
@@ -362,6 +363,14 @@ export default function Dashboard() {
         {currentPage === "comunicados" && (
 
           <ComunicadosContent />
+
+        )}
+
+        {/* NOTIFICACIONES PERSONALES */}
+
+        {currentPage === "notificaciones-personales" && (
+
+          <NotificacionesPersonalesContent />
 
         )}
 
