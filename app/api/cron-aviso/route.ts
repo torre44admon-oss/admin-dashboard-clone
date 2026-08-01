@@ -348,12 +348,13 @@ export async function GET(request: Request) {
 
           // Registrar en la tabla cobros en Supabase
           try {
+            const totalSuma = Number(montoCuota) + cargos.reduce((acc, c) => acc + (Number(c.monto) || 0), 0)
             await supabase.from("cobros").insert([{
               unidad: u.unidad,
               propietario: u.propietario || "",
               telefono: u.telefono || "",
               periodo: `${mesVigente} ${anoVigente}`,
-              total: `$ ${totalPagarCalculado.toLocaleString("es-CO")}`,
+              total: `$ ${totalSuma.toLocaleString("es-CO")}`,
               fecha: `${hoyColombia.getFullYear()}-${String(hoyColombia.getMonth() + 1).padStart(2, "0")}-${String(hoyColombia.getDate()).padStart(2, "0")}`
             }])
           } catch (cErr) {
