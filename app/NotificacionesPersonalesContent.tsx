@@ -176,6 +176,63 @@ export function NotificacionesPersonalesContent() {
     }
   }
 
+  async function handleGenerarEstadoCuenta() {
+    if (!unidadSeleccionada) {
+      toast.error("Selecciona un apartamento.")
+      return
+    }
+    toast.info(`Generando estado de cuenta para Apto. ${unidadSeleccionada}...`)
+    
+    try {
+      const objU = unidades.find(u => u.unidad === unidadSeleccionada)
+      const prop = objU?.propietario || "Residente"
+
+      // Consultar deudas de la unidad desde Supabase
+      const { data: mensualidades } = await supabase.from("mensualidades").select("*").eq("unidad", unidadSeleccionada).eq("estado", "Pendiente")
+      const { data: multas } = await supabase.from("multas_asignadas").select("*").eq("unidad", unidadSeleccionada).in("estado", ["Pendiente", "Vencida"])
+      const { data: proyectos } = await supabase.from("proyectos_asignados").select("*").eq("unidad", unidadSeleccionada).eq("estado", "Pendiente")
+      const { data: cartera } = await supabase.from("cartera").select("*").eq("unidad", unidadSeleccionada)
+
+      let totalMensualidades = 0
+      let detalleMensualidades = ""
+      if (mensualidades && mensualidades.length > 0) {
+        totalMensualidades = mensualidades.reduce((acc, m) => acc + (Number(m.valor) || 0), 0)
+        detalleMensualidades = `• Cuotas pendientes (${mensualidades.length}): $ ${totalMensualidades.toLocaleString("es-CO")}\n`
+      } else {
+        detalleMensualidades = `• Cuota del mes al día ✅\n`
+      }
+
+      let totalMultas = 0
+      if (multas && multas.length > 0) {
+        totalMultas = multas.reduce((acc, m) => acc + (Number(m.valor) || 0), 0)
+      }
+
+      let totalProyectos = 0
+      if (proyectos && proyectos.length > 0) {
+        totalProyectos = proyectos.reduce((acc, p) => acc + (Number(p.valor) || 0), 0)
+      }
+
+      let saldoCartera = 0
+      if (cartera && cartera.length > 0) {
+        saldoCartera = Number(cartera[0].saldo_pendiente) || Number(cartera[0].monto) || 0
+      }
+
+      const granTotal = totalMensualidades + totalMultas + totalProyectos + saldoCartera
+
+      let estadoTexto = `📄 *ESTADO DE CUENTA OFICIAL DE ADMINISTRACIÓN*\n*Torre 44*\n\nEstimado(a) residente del *Apto. ${unidadSeleccionada}* (${prop}):\n\nA continuación se detalla su estado de cuenta a la fecha:\n\n${detalleMensualidades}`
+      if (totalMultas > 0) estadoTexto += `• Multas / Sanciones: $ ${totalMultas.toLocaleString("es-CO")}\n`
+      if (totalProyectos > 0) estadoTexto += `• Cuotas de Proyecto: $ ${totalProyectos.toLocaleString("es-CO")}\n`
+      if (saldoCartera > 0) estadoTexto += `• Saldo Cartera Anterior: $ ${saldoCartera.toLocaleString("es-CO")}\n`
+
+      estadoTexto += `\n💰 *TOTAL SALDO PENDIENTE: $ ${granTotal.toLocaleString("es-CO")}*\n\nAgradecemos su puntualidad en el pago para el buen mantenimiento del edificio.\n\nAtentamente,\n*Administración – Torre 44*`
+
+      setMensaje(estadoTexto)
+      toast.success("✅ Estado de cuenta generado en la vista previa. Revisa y presiona Enviar.")
+    } catch {
+      toast.error("Error al consultar el estado de cuenta en Supabase.")
+    }
+  }
+
   function formatFecha(iso: string) {
     return new Date(iso).toLocaleString("es-CO", {
       day: "2-digit", month: "short", year: "numeric",
@@ -257,6 +314,14 @@ export function NotificacionesPersonalesContent() {
 
         <div className="flex items-center justify-between mt-4">
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleGenerarEstadoCuenta}
+              className="flex items-center gap-2 bg-indigo-600/20 border border-indigo-500/40 hover:bg-indigo-600/40 text-indigo-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              📄 Cargar Estado de Cuenta del Apto. {unidadSeleccionada}
+            </button>
+
             <label className="flex items-center gap-2 bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all">
               <ImageIcon className="w-4 h-4 text-indigo-400" />
               <span>{subiendoImagen ? "Cargando..." : imagenUrl ? "Cambiar Foto" : "Adjuntar Foto"}</span>
