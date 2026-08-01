@@ -204,9 +204,18 @@ export function ComunicadosContent() {
 
         {/* Preview */}
         <div className="bg-[#0b0f19] border border-[#2d3748] rounded-xl p-4 mb-4 text-sm text-slate-300 min-h-[56px]">
-          <p className="text-indigo-400 font-bold text-xs mb-1">📢 COMUNICADO · Vista previa en el grupo</p>
+          <p className="text-indigo-400 font-bold text-xs mb-1">
+            {destinatario === "grupo"
+              ? "📢 COMUNICADO GENERAL · Vista previa para el Grupo de WhatsApp"
+              : `📩 NOTIFICACIÓN PERSONAL · Vista previa para Apto. ${destinatario.replace("unidad_", "")}`}
+          </p>
           <p className="text-slate-400 text-xs mb-2 font-semibold">
-            {localStorage?.getItem?.("nombre_torre") || "Nombre del Condominio"}
+            {destinatario !== "grupo" && (
+              <span className="text-emerald-400 block mb-1 font-bold">
+                Para: {unidades.find(u => u.unidad === destinatario.replace("unidad_", ""))?.propietario || "Residente"} (Apto. {destinatario.replace("unidad_", "")})
+              </span>
+            )}
+            {localStorage?.getItem?.("nombre_torre") || "Torre 44"}
           </p>
           {imagenUrl && (
             <div className="relative mb-3 inline-block max-w-[240px]">

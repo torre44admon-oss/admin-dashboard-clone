@@ -33,10 +33,23 @@ export async function POST(request: Request) {
       .limit(1)
     const nombreTorre = torreData?.[0]?.nombre_torre || "Administración"
 
+    let mensajeFormateado = ""
+
+    if (unidadDestino) {
+      // Buscar propietario
+      const { data: uData } = await supabase
+        .from("unidades")
+        .select("propietario")
+        .eq("unidad", unidadDestino)
+        .single()
+      const propNombre = uData?.propietario ? ` (${uData.propietario})` : ""
+
+      mensajeFormateado = `📩 *NOTIFICACIÓN PERSONAL DE ADMINISTRACIÓN*\n*${nombreTorre}*\n\nEstimado(a) residente del *Apto. ${unidadDestino}*${propNombre}:\n\n${(mensaje || "").trim()}\n\nAtentamente,\n*Administración – ${nombreTorre}*`
+    } else {
+      mensajeFormateado = `📢 *COMUNICADO GENERAL*\n*${nombreTorre}*\n\n${(mensaje || "").trim()}\n\nAtentamente,\n*Administración – ${nombreTorre}*`
+    }
+
     const origin = new URL(request.url).origin
-
-    const mensajeFormateado = `📢 *COMUNICADO* ${unidadDestino ? `(Apto. ${unidadDestino})` : ''}\n*${nombreTorre}*\n\n${(mensaje || "").trim()}`
-
     let res: Response
 
     if (unidadDestino && telefonoDestino) {
