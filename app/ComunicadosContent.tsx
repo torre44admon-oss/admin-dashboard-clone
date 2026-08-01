@@ -12,9 +12,17 @@ interface Comunicado {
   enviado_en: string
 }
 
+interface UnidadOption {
+  unidad: string
+  propietario: string
+  telefono: string
+}
+
 export function ComunicadosContent() {
   const [mensaje, setMensaje] = useState("")
   const [imagenUrl, setImagenUrl] = useState("")
+  const [destinatario, setDestinatario] = useState("grupo") // "grupo" or "unidad_XXX"
+  const [unidades, setUnidades] = useState<UnidadOption[]>([])
   const [subiendoImagen, setSubiendoImagen] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [historial, setHistorial] = useState<Comunicado[]>([])
@@ -29,7 +37,16 @@ export function ComunicadosContent() {
 
   useEffect(() => {
     cargarHistorial()
+    cargarUnidades()
   }, [])
+
+  async function cargarUnidades() {
+    const { data } = await supabase
+      .from("unidades")
+      .select("unidad, propietario, telefono")
+      .order("unidad", { ascending: true })
+    setUnidades(data || [])
+  }
 
   async function cargarHistorial() {
     setCargando(true)
@@ -85,16 +102,34 @@ export function ComunicadosContent() {
     }
     setEnviando(true)
 
+    let unidadDestino: string | undefined = undefined
+    let telefonoDestino: string | undefined = undefined
+
+    if (destinatario.startsWith("unidad_")) {
+      const uId = destinatario.replace("unidad_", "")
+      const uObj = unidades.find(u => u.unidad === uId)
+      if (uObj) {
+        unidadDestino = uObj.unidad
+        telefonoDestino = uObj.telefono
+      }
+    }
+
     try {
       const res = await fetch("/api/comunicado", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensaje: mensaje.trim(), imageUrl: imagenUrl || undefined })
+        body: JSON.stringify({
+          mensaje: mensaje.trim(),
+          imageUrl: imagenUrl || undefined,
+          unidadDestino,
+          telefonoDestino
+        })
       })
       const data = await res.json()
 
       if (data.success) {
-        toast.success("✅ Comunicado enviado y guardado en Supabase.")
+        const destTexto = unidadDestino ? `al privado del Apto. ${unidadDestino}` : "al Grupo de WhatsApp"
+        toast.success(`✅ Comunicado enviado ${destTexto} y guardado en Supabase.`)
         setMensaje("")
         setImagenUrl("")
       } else {
@@ -139,11 +174,32 @@ export function ComunicadosContent() {
 
       {/* Redactor */}
       <div className="bg-[#151c2c] border border-[#1e293b] rounded-2xl p-6 mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-            <Megaphone className="w-5 h-5 text-indigo-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+              <Megaphone className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h2 className="text-lg font-bold text-white">Nuevo Comunicado</h2>
           </div>
-          <h2 className="text-lg font-bold text-white">Nuevo Comunicado</h2>
+
+          {/* Selector de Destinatario */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-semibold">Enviar a:</span>
+            <select
+              value={destinatario}
+              onChange={(e) => setDestinatario(e.target.value)}
+              className="bg-[#0b0f19] border border-[#2d3748] focus:border-indigo-500 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl focus:outline-none cursor-pointer"
+            >
+              <option value="grupo">👥 Toda la Copropiedad (Grupo de WhatsApp)</option>
+              <optgroup label="👤 Enviar mensaje privado por WhatsApp:">
+                {unidades.map(u => (
+                  <option key={u.unidad} value={`unidad_${u.unidad}`}>
+                    Apto. {u.unidad} — {u.propietario} ({u.telefono || 'Sin tel'})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
         </div>
 
         {/* Preview */}
