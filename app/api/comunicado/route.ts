@@ -59,15 +59,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: data.error || "Error al enviar al grupo" }, { status: 500 })
     }
 
-    // Guardar historial del comunicado en Supabase de forma segura
-    try {
+    // Guardar historial del comunicado en Supabase de forma garantizada
+    const comunicadoRecord: any = {
+      mensaje: (mensaje || "").trim() || "Foto adjunta",
+      enviado_en: new Date().toISOString()
+    }
+    if (imageUrl) {
+      comunicadoRecord.image_url = imageUrl
+    }
+
+    const { error: insertErr } = await supabase.from("comunicados").insert([comunicadoRecord])
+
+    if (insertErr) {
+      // Si falló por falta de la columna image_url, reintentar sin ese campo
+      console.log("Reintentando inserción sin campo image_url:", insertErr.message)
       await supabase.from("comunicados").insert([{
-        mensaje: (mensaje || "").trim(),
-        image_url: imageUrl || null,
+        mensaje: (mensaje || "").trim() || "Foto adjunta",
         enviado_en: new Date().toISOString()
       }])
-    } catch (dbErr) {
-      console.log("Aviso: la tabla comunicados no existe aún en Supabase:", dbErr)
     }
 
     return NextResponse.json({ success: true })
