@@ -342,9 +342,23 @@ export async function GET(request: Request) {
         })
         const dataWhatsapp = await resWhatsapp.json()
 
-        const enviado = resWhatsapp.ok && (dataWhatsapp?.messages?.[0]?.id || dataWhatsapp?.contacts?.[0])
+        const enviado = resWhatsapp.ok && (dataWhatsapp?.messages?.[0]?.id || dataWhatsapp?.contacts?.[0] || dataWhatsapp?.success !== false)
         if (enviado) {
           resultados.push({ unidad: u.unidad, success: true, ref: dataWhatsapp?.messages?.[0]?.id, telefono: telefonoClean, imageUrl: finalImageUrl, metaContacto: dataWhatsapp?.contacts?.[0]?.wa_id })
+
+          // Registrar en la tabla cobros en Supabase
+          try {
+            await supabase.from("cobros").insert([{
+              unidad: u.unidad,
+              propietario: u.propietario || "",
+              telefono: u.telefono || "",
+              periodo: `${mesVigente} ${anoVigente}`,
+              total: `$ ${totalPagarCalculado.toLocaleString("es-CO")}`,
+              fecha: `${hoyColombia.getFullYear()}-${String(hoyColombia.getMonth() + 1).padStart(2, "0")}-${String(hoyColombia.getDate()).padStart(2, "0")}`
+            }])
+          } catch (cErr) {
+            console.log("Aviso: no se insertó en la tabla cobros:", cErr)
+          }
         } else {
           resultados.push({ unidad: u.unidad, success: false, error: dataWhatsapp?.error?.message || dataWhatsapp?.error || JSON.stringify(dataWhatsapp) || "Error al enviar WhatsApp", telefono: telefonoClean, imageUrl: finalImageUrl })
         }
