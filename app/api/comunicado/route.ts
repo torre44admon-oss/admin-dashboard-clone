@@ -3,10 +3,10 @@ import { supabase } from "@/lib/supabase"
 
 export async function POST(request: Request) {
   try {
-    const { mensaje } = await request.json()
+    const { mensaje, imageUrl } = await request.json()
 
-    if (!mensaje || !mensaje.trim()) {
-      return NextResponse.json({ error: "El mensaje no puede estar vacío" }, { status: 400 })
+    if ((!mensaje || !mensaje.trim()) && !imageUrl) {
+      return NextResponse.json({ error: "El mensaje o la imagen no puede estar vacío" }, { status: 400 })
     }
 
     // Obtener configuración del bot
@@ -33,19 +33,24 @@ export async function POST(request: Request) {
       .limit(1)
     const nombreTorre = torreData?.[0]?.nombre_torre || "Administración"
 
-    const mensajeFormateado = `📢 *COMUNICADO*\n*${nombreTorre}*\n\n${mensaje.trim()}`
+    const mensajeFormateado = `📢 *COMUNICADO*\n*${nombreTorre}*\n\n${(mensaje || "").trim()}`
 
-    // Enviar al grupo vía bot de Baileys
+    // Enviar al grupo vía bot de Baileys (con imagen si aplica)
+    const payload: any = {
+      groupId: bot.grupo_whatsapp_id,
+      message: mensajeFormateado
+    }
+    if (imageUrl) {
+      payload.imageUrl = imageUrl
+    }
+
     const res = await fetch(`${bot.railway_bot_url}/send-group`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": bot.bot_api_key
       },
-      body: JSON.stringify({
-        groupId: bot.grupo_whatsapp_id,
-        message: mensajeFormateado
-      })
+      body: JSON.stringify(payload)
     })
 
     const data = await res.json()
@@ -57,7 +62,8 @@ export async function POST(request: Request) {
     // Guardar historial del comunicado en Supabase de forma segura
     try {
       await supabase.from("comunicados").insert([{
-        mensaje: mensaje.trim(),
+        mensaje: (mensaje || "").trim(),
+        image_url: imageUrl || null,
         enviado_en: new Date().toISOString()
       }])
     } catch (dbErr) {

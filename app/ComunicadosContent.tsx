@@ -3,16 +3,19 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
-import { Send, Megaphone, Clock, Trash2 } from "lucide-react"
+import { Send, Megaphone, Clock, Trash2, Image as ImageIcon, X } from "lucide-react"
 
 interface Comunicado {
   id: number
   mensaje: string
+  image_url?: string
   enviado_en: string
 }
 
 export function ComunicadosContent() {
   const [mensaje, setMensaje] = useState("")
+  const [imagenUrl, setImagenUrl] = useState("")
+  const [subiendoImagen, setSubiendoImagen] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [historial, setHistorial] = useState<Comunicado[]>([])
   const [cargando, setCargando] = useState(true)
@@ -52,9 +55,8 @@ export function ComunicadosContent() {
         .limit(20)
 
       if (!error && data && data.length > 0) {
-        // Merge with local if any missing
         const mapa = new Map<string, Comunicado>()
-        data.forEach((item: any) => mapa.set(String(item.id || item.enviado_en), { id: item.id || Date.now(), mensaje: item.mensaje, enviado_en: item.enviado_en }))
+        data.forEach((item: any) => mapa.set(String(item.id || item.enviado_en), { id: item.id || Date.now(), mensaje: item.mensaje, image_url: item.image_url, enviado_en: item.enviado_en }))
         local.forEach(item => {
           const key = String(item.id || item.enviado_en)
           if (!mapa.has(key)) mapa.set(key, item)
@@ -72,9 +74,42 @@ export function ComunicadosContent() {
     }
   }
 
+  async function handleSubirImagen(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setSubiendoImagen(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const fileName = `comunicado_${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from("avisos")
+        .upload(`comunicados/${fileName}`, file, { upsert: true })
+
+      if (uploadError) {
+        // Fallback Base64 reader if storage fails
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setImagenUrl(reader.result as string)
+          toast.success("Foto adjuntada correctamente.")
+          setSubiendoImagen(false)
+        }
+        reader.readAsDataURL(file)
+      } else {
+        const { data } = supabase.storage.from("avisos").getPublicUrl(`comunicados/${fileName}`)
+        setImagenUrl(data.publicUrl)
+        toast.success("Foto subida y adjuntada correctamente.")
+        setSubiendoImagen(false)
+      }
+    } catch {
+      toast.error("Error al procesar la imagen.")
+      setSubiendoImagen(false)
+    }
+  }
+
   async function handleEnviar() {
-    if (!mensaje.trim()) {
-      toast.error("Escribe un mensaje antes de enviar.")
+    if (!mensaje.trim() && !imagenUrl) {
+      toast.error("Escribe un mensaje o adjunta una foto antes de enviar.")
       return
     }
     setEnviando(true)
@@ -82,10 +117,10 @@ export function ComunicadosContent() {
     const nuevoComunicado: Comunicado = {
       id: Date.now(),
       mensaje: mensaje.trim(),
+      image_url: imagenUrl || undefined,
       enviado_en: new Date().toISOString()
     }
 
-    // 1. Guardar localmente de inmediato para garantizar que jamás se pierda
     const actualLocal = getLocalHistorial()
     const actualizado = [nuevoComunicado, ...actualLocal]
     setHistorial(actualizado)
@@ -95,20 +130,23 @@ export function ComunicadosContent() {
       const res = await fetch("/api/comunicado", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensaje: mensaje.trim() })
+        body: JSON.stringify({ mensaje: mensaje.trim(), imageUrl: imagenUrl || undefined })
       })
       const data = await res.json()
 
       if (data.success) {
-        toast.success("✅ Comunicado enviado y guardado con éxito.")
+        toast.success("✅ Comunicado con foto enviado y guardado con éxito.")
         setMensaje("")
+        setImagenUrl("")
       } else {
-        toast.warning(data.error || "Guardado en la aplicación, pero hubo un detalle al publicar en el grupo de WhatsApp.")
+        toast.warning(data.error || "Guardado en la aplicación, pero hubo un detalle al publicar en WhatsApp.")
         setMensaje("")
+        setImagenUrl("")
       }
     } catch {
       toast.info("Comunicado guardado localmente en la aplicación.")
       setMensaje("")
+      setImagenUrl("")
     } finally {
       setEnviando(false)
       cargarHistorial()
@@ -161,7 +199,20 @@ export function ComunicadosContent() {
           <p className="text-slate-400 text-xs mb-2 font-semibold">
             {localStorage?.getItem?.("nombre_torre") || "Nombre del Condominio"}
           </p>
-          <p className="whitespace-pre-wrap">{mensaje || <span className="text-slate-600 italic">El comunicado aparecerá aquí...</span>}</p>
+          {imagenUrl && (
+            <div className="relative mb-3 inline-block max-w-[240px]">
+              <img src={imagenUrl} alt="Adjunto" className="w-full max-h-48 object-cover rounded-lg border border-[#2d3748]" />
+              <button
+                type="button"
+                onClick={() => setImagenUrl("")}
+                className="absolute top-1 right-1 bg-red-600/90 text-white p-1 rounded-full hover:bg-red-700 transition-colors"
+                title="Quitar foto"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          <p className="whitespace-pre-wrap">{mensaje || (!imagenUrl && <span className="text-slate-600 italic">El comunicado aparecerá aquí...</span>)}</p>
         </div>
 
         {/* Plantillas Rápidas */}
@@ -177,7 +228,7 @@ export function ComunicadosContent() {
             </button>
             <button
               type="button"
-              onClick={() => setMensaje(`CONVOCATORIA A ASAMBLEA GENERAL DE COPROPIETARIOS\n\nCordial saludo a todos los propietarios.\n\nPor medio del presente, se convoca a la próxima Asamblea General de la Copropiedad, que se llevará a cabo el próximo sábado a las 6:30 p.m. en el área común de zonas verdes del conjunto.\n\nSu asistencia y puntualidad son fundamentales para tratar los temas de interés de la comunidad y tomar decisiones importantes para la copropiedad.\n\nSe recuerda que la no asistencia sin causa justificada dará lugar a una multa de $35.000 COP, de acuerdo con lo establecido en el reglamento de la copropiedad.\n\nAgradecemos su compromiso y participación.\nAdministración – Torre 44`)}
+              onClick={() => setMensaje(`CONVOCATORIA A ASAMBLEA GENERAL DE COPROPIETARIOS\n\nCordial saludo a todos los propietarios.\n\nPor medio del presente, se convoca a la próxima Asamblea General de la Copropiedad, que se llevará a cabo el próximo sábado a las 6:30 p.m. en el área común de zonas verdes del conjunto.\n\nSu asistencia y puntualidad son fundamentales para tratar los temas de interés de la comunidad y tomar decisiones importantes para la copropiedad.\n\nSe recuerda que la no asistencia sin causa justificada dará lugar a una multa de $35.000 COP, de acuerdo con lo established en el reglamento de la copropiedad.\n\nAgradecemos su compromiso y participación.\nAdministración – Torre 44`)}
               className="bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer"
             >
               🏛️ Convocatoria a Asamblea ($35k Multa)
@@ -208,10 +259,18 @@ export function ComunicadosContent() {
         />
 
         <div className="flex items-center justify-between mt-4">
-          <span className="text-slate-500 text-xs">{mensaje.length} caracteres</span>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all">
+              <ImageIcon className="w-4 h-4 text-indigo-400" />
+              <span>{subiendoImagen ? "Cargando..." : imagenUrl ? "Cambiar Foto" : "Adjuntar Foto"}</span>
+              <input type="file" accept="image/*" onChange={handleSubirImagen} className="hidden" disabled={subiendoImagen} />
+            </label>
+            <span className="text-slate-500 text-xs">{mensaje.length} caracteres</span>
+          </div>
+
           <button
             onClick={handleEnviar}
-            disabled={enviando || !mensaje.trim()}
+            disabled={enviando || (!mensaje.trim() && !imagenUrl)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all active:scale-[0.98] cursor-pointer"
           >
             <Send className="w-4 h-4" />
@@ -242,6 +301,9 @@ export function ComunicadosContent() {
                 key={c.id}
                 className="bg-[#0b0f19] border border-[#2d3748] rounded-xl p-4 flex items-start gap-4"
               >
+                {c.image_url && (
+                  <img src={c.image_url} alt="Foto" className="w-16 h-16 object-cover rounded-lg border border-[#2d3748] flex-shrink-0" />
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
