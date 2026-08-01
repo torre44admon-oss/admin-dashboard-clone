@@ -25,6 +25,13 @@ export async function POST(request: Request) {
       }, { status: 503 })
     }
 
+    // Auto despertar bot si estaba suspendido (Wake-up ping)
+    try {
+      await fetch(`${bot.railway_bot_url}/status`, { signal: AbortSignal.timeout(4000) })
+    } catch (pingErr) {
+      console.log("Ping de despertar enviado al bot de Railway:", pingErr)
+    }
+
     // Obtener nombre de la torre para el encabezado
     const { data: torreData } = await supabase
       .from("configuracion_torre")
