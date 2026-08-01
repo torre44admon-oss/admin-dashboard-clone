@@ -127,7 +127,14 @@ export function NotificacionesPersonalesContent() {
           telefonoDestino: tel
         })
       })
-      const data = await res.json()
+      
+      let data: any = {}
+      const resText = await res.text()
+      try {
+        data = JSON.parse(resText)
+      } catch {
+        data = { error: "Respuesta no válida del servidor" }
+      }
 
       // Guardar también en la tabla notificaciones_personales en Supabase
       try {
@@ -142,12 +149,14 @@ export function NotificacionesPersonalesContent() {
         console.log("Aviso guardado:", dbErr)
       }
 
-      if (data.success) {
-        toast.success(`✅ Notificación enviada al WhatsApp privado del Apto. ${unidadSeleccionada}.`)
+      if (res.ok && data.success !== false) {
+        toast.success(`✅ Notificación registrada para el Apto. ${unidadSeleccionada}.`)
         setMensaje("")
         setImagenUrl("")
       } else {
-        toast.error(data.error || "Error al enviar la notificación.")
+        toast.warning(data.error || "Notificación guardada en la aplicación. Revisa la configuración del bot.")
+        setMensaje("")
+        setImagenUrl("")
       }
     } catch {
       toast.error("Error de red al enviar la notificación.")

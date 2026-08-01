@@ -90,10 +90,19 @@ export async function POST(request: Request) {
       })
     }
 
-    const data = await res.json()
+    let data: any = {}
+    const resText = await res.text()
+    try {
+      data = JSON.parse(resText)
+    } catch {
+      data = { rawResponse: resText }
+    }
 
     if (!res.ok) {
-      return NextResponse.json({ success: false, error: data.error || "Error al enviar al grupo" }, { status: 500 })
+      return NextResponse.json({
+        success: false,
+        error: data.error || data.message || (typeof resText === "string" && resText.length < 100 ? resText : "Error al comunicarse con el bot de WhatsApp")
+      }, { status: 500 })
     }
 
     // Guardar historial del comunicado en Supabase de forma garantizada
