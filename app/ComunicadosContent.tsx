@@ -31,51 +31,22 @@ export function ComunicadosContent() {
     cargarHistorial()
   }, [])
 
-  function getLocalHistorial(): Comunicado[] {
-    if (typeof window === "undefined") return []
-    try {
-      const saved = localStorage.getItem("historial_comunicados")
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  }
-
-  function saveLocalHistorial(items: Comunicado[]) {
-    if (typeof window === "undefined") return
-    try {
-      localStorage.setItem("historial_comunicados", JSON.stringify(items))
-    } catch (e) {
-      console.error("Error saving local comunicados:", e)
-    }
-  }
-
   async function cargarHistorial() {
     setCargando(true)
-    const local = getLocalHistorial()
-    
     try {
       const { data, error } = await supabase
         .from("comunicados")
         .select("*")
         .order("enviado_en", { ascending: false })
-        .limit(20)
+        .limit(30)
 
-      if (!error && data && data.length > 0) {
-        const mapa = new Map<string, Comunicado>()
-        data.forEach((item: any) => mapa.set(String(item.id || item.enviado_en), { id: item.id || Date.now(), mensaje: item.mensaje, image_url: item.image_url, enviado_en: item.enviado_en }))
-        local.forEach(item => {
-          const key = String(item.id || item.enviado_en)
-          if (!mapa.has(key)) mapa.set(key, item)
-        })
-        const combinado = Array.from(mapa.values()).sort((a, b) => new Date(b.enviado_en).getTime() - new Date(a.enviado_en).getTime())
-        setHistorial(combinado)
-        saveLocalHistorial(combinado)
+      if (!error && data) {
+        setHistorial(data)
       } else {
-        setHistorial(local)
+        setHistorial([])
       }
     } catch {
-      setHistorial(local)
+      setHistorial([])
     } finally {
       setCargando(false)
     }
@@ -93,23 +64,16 @@ export function ComunicadosContent() {
         .from("avisos")
         .upload(`comunicados/${fileName}`, file, { upsert: true })
 
-      if (uploadError) {
-        // Fallback Base64 reader if storage fails
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setImagenUrl(reader.result as string)
-          toast.success("Foto adjuntada correctamente.")
-          setSubiendoImagen(false)
-        }
-        reader.readAsDataURL(file)
-      } else {
+      if (!uploadError) {
         const { data } = supabase.storage.from("avisos").getPublicUrl(`comunicados/${fileName}`)
         setImagenUrl(data.publicUrl)
-        toast.success("Foto subida y adjuntada correctamente.")
-        setSubiendoImagen(false)
+        toast.success("Foto subida a Supabase.")
+      } else {
+        toast.error("Error al subir imagen a Supabase.")
       }
     } catch {
       toast.error("Error al procesar la imagen.")
+    } finally {
       setSubiendoImagen(false)
     }
   }
@@ -121,18 +85,6 @@ export function ComunicadosContent() {
     }
     setEnviando(true)
 
-    const nuevoComunicado: Comunicado = {
-      id: Date.now(),
-      mensaje: mensaje.trim(),
-      image_url: imagenUrl || undefined,
-      enviado_en: new Date().toISOString()
-    }
-
-    const actualLocal = getLocalHistorial()
-    const actualizado = [nuevoComunicado, ...actualLocal]
-    setHistorial(actualizado)
-    saveLocalHistorial(actualizado)
-
     try {
       const res = await fetch("/api/comunicado", {
         method: "POST",
@@ -142,18 +94,14 @@ export function ComunicadosContent() {
       const data = await res.json()
 
       if (data.success) {
-        toast.success("✅ Comunicado con foto enviado y guardado con éxito.")
+        toast.success("✅ Comunicado enviado y guardado en Supabase.")
         setMensaje("")
         setImagenUrl("")
       } else {
-        toast.warning(data.error || "Guardado en la aplicación, pero hubo un detalle al publicar en WhatsApp.")
-        setMensaje("")
-        setImagenUrl("")
+        toast.error(data.error || "Error al procesar el comunicado.")
       }
     } catch {
-      toast.info("Comunicado guardado localmente en la aplicación.")
-      setMensaje("")
-      setImagenUrl("")
+      toast.error("Error al guardar en Supabase.")
     } finally {
       setEnviando(false)
       cargarHistorial()
@@ -161,15 +109,13 @@ export function ComunicadosContent() {
   }
 
   async function handleEliminar(id: number) {
-    try {
-      await supabase.from("comunicados").delete().eq("id", id)
-    } catch (e) {
-      console.log("Eliminando localmente:", e)
+    const { error } = await supabase.from("comunicados").delete().eq("id", id)
+    if (!error) {
+      toast.success("Comunicado eliminado de Supabase.")
+      cargarHistorial()
+    } else {
+      toast.error("Error al eliminar de Supabase.")
     }
-    const nuevoHistorial = historial.filter(c => c.id !== id)
-    setHistorial(nuevoHistorial)
-    saveLocalHistorial(nuevoHistorial)
-    toast.success("Comunicado eliminado del historial.")
   }
 
   function formatFecha(iso: string) {
