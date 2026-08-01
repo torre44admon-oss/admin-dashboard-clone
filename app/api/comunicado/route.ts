@@ -57,15 +57,20 @@ export async function POST(request: Request) {
       let telClean = String(telefonoDestino).replace(/[^0-9]/g, "")
       if (telClean.length === 10 && !telClean.startsWith("57")) telClean = "57" + telClean
 
-      // Enviar mensaje individual privado vía WhatsApp API interna o bot
-      res = await fetch(`${origin}/api/whatsapp`, {
+      // Enviar mensaje individual privado directamente vía bot de Railway de la copropiedad
+      const payload: any = {
+        phone: telClean,
+        message: mensajeFormateado
+      }
+      if (imageUrl) payload.imageUrl = imageUrl
+
+      res = await fetch(`${bot.railway_bot_url}/send-message`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telefono: telClean,
-          mensaje: mensajeFormateado,
-          imageUrl: imageUrl || undefined
-        })
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": bot.bot_api_key
+        },
+        body: JSON.stringify(payload)
       })
     } else {
       // Enviar al grupo vía bot de Baileys
