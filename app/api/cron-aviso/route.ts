@@ -144,6 +144,10 @@ export async function GET(request: Request) {
     const resultados: any[] = []
     const origin = new URL(request.url).origin
 
+    // Obtener configuración del bot de Baileys
+    const { data: botConfigData } = await supabase.from("configuracion_bot").select("railway_bot_url, bot_api_key").limit(1)
+    const bot = botConfigData?.[0] || { railway_bot_url: "", bot_api_key: "" }
+
     for (const u of unidades) {
       try {
         let telefonoClean = forceTelefono 
@@ -335,14 +339,35 @@ export async function GET(request: Request) {
           finalImageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/640px-WhatsApp.svg.png"
         }
 
-        const resWhatsapp = await fetch(`${origin}/api/whatsapp`, {
+        // Intentar envío vía Bot de Baileys de la copropiedad
+        const jidIndividual = `${telefonoClean}@s.whatsapp.net`
+        let resWhatsapp = await fetch(`${bot.railway_bot_url}/send-group`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ telefono: telefonoClean, mensaje: msgText, imageUrl: finalImageUrl })
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": bot.bot_api_key
+          },
+          body: JSON.stringify({
+            groupId: jidIndividual,
+            message: msgText,
+            imageUrl: finalImageUrl
+          })
         })
-        const dataWhatsapp = await resWhatsapp.json()
 
-        const enviado = resWhatsapp.ok && (dataWhatsapp?.messages?.[0]?.id || dataWhatsapp?.contacts?.[0] || dataWhatsapp?.success !== false)
+        let dataWhatsapp: any = {}
+        try {
+          dataWhatsapp = await resWhatsapp.json()
+        } catch {
+          // Fallback a API WhatsApp si Baileys no responde
+          resWhatsapp = await fetch(`${origin}/api/whatsapp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ telefono: telefonoClean, mensaje: msgText, imageUrl: finalImageUrl })
+          })
+          try { dataWhatsapp = await resWhatsapp.json() } catch { dataWhatsapp = {} }
+        }
+
+        const enviado = resWhatsapp.ok && (dataWhatsapp?.success !== false || dataWhatsapp?.messages?.[0]?.id)
         if (enviado) {
           resultados.push({ unidad: u.unidad, success: true, ref: dataWhatsapp?.messages?.[0]?.id, telefono: telefonoClean, imageUrl: finalImageUrl, metaContacto: dataWhatsapp?.contacts?.[0]?.wa_id })
 

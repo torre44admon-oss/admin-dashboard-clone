@@ -60,19 +60,23 @@ export async function POST(request: Request) {
     let res: Response
 
     if (unidadDestino && telefonoDestino) {
-      // Limpiar teléfono
       let telClean = String(telefonoDestino).replace(/[^0-9]/g, "")
       if (telClean.length === 10 && !telClean.startsWith("57")) telClean = "57" + telClean
+      const jid = `${telClean}@s.whatsapp.net`
 
-      // Enviar mensaje individual usando tu API oficial de WhatsApp (/api/whatsapp)
-      res = await fetch(`${origin}/api/whatsapp`, {
+      const payload: any = {
+        groupId: jid,
+        message: mensajeFormateado
+      }
+      if (imageUrl) payload.imageUrl = imageUrl
+
+      res = await fetch(`${bot.railway_bot_url}/send-group`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telefono: telClean,
-          mensaje: mensajeFormateado,
-          imageUrl: imageUrl || undefined
-        })
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": bot.bot_api_key
+        },
+        body: JSON.stringify(payload)
       })
     } else {
       // Enviar al grupo vía bot de Baileys
