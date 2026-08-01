@@ -19,6 +19,13 @@ export function ComunicadosContent() {
   const [enviando, setEnviando] = useState(false)
   const [historial, setHistorial] = useState<Comunicado[]>([])
   const [cargando, setCargando] = useState(true)
+  const [desplegados, setDesplegados] = useState<number[]>([])
+
+  const toggleDesplegar = (id: number) => {
+    setDesplegados(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    )
+  }
 
   useEffect(() => {
     cargarHistorial()
@@ -296,30 +303,60 @@ export function ComunicadosContent() {
           </p>
         ) : (
           <div className="space-y-3">
-            {historial.map(c => (
-              <div
-                key={c.id}
-                className="bg-[#0b0f19] border border-[#2d3748] rounded-xl p-4 flex items-start gap-4"
-              >
-                {c.image_url && (
-                  <img src={c.image_url} alt="Foto" className="w-16 h-16 object-cover rounded-lg border border-[#2d3748] flex-shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {formatFecha(c.enviado_en)}
-                  </p>
-                  <p className="text-slate-300 text-sm whitespace-pre-wrap break-words">{c.mensaje}</p>
-                </div>
-                <button
-                  onClick={() => handleEliminar(c.id)}
-                  className="text-slate-600 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5 cursor-pointer"
-                  title="Eliminar del historial"
+            {historial.map(c => {
+              const estaAbierto = desplegados.includes(c.id)
+              const esLargo = (c.mensaje && c.mensaje.length > 180) || c.mensaje.includes("\n\n")
+
+              return (
+                <div
+                  key={c.id}
+                  className="bg-[#0b0f19] border border-[#2d3748] hover:border-indigo-500/50 transition-all rounded-xl p-4 flex flex-col md:flex-row md:items-start gap-4"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+                  {c.image_url && (
+                    <img src={c.image_url} alt="Foto" className={`${estaAbierto ? "w-full md:w-36 h-36" : "w-16 h-16"} object-cover rounded-lg border border-[#2d3748] flex-shrink-0 transition-all duration-300`} />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <p className="text-xs text-slate-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-indigo-400" />
+                        {formatFecha(c.enviado_en)}
+                      </p>
+
+                      {esLargo && (
+                        <button
+                          type="button"
+                          onClick={() => toggleDesplegar(c.id)}
+                          className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                        >
+                          {estaAbierto ? "Ver menos ▲" : "Ver comunicado completo ▼"}
+                        </button>
+                      )}
+                    </div>
+
+                    <p className={`text-slate-300 text-sm whitespace-pre-wrap break-words ${!estaAbierto && esLargo ? "line-clamp-2" : ""}`}>
+                      {c.mensaje}
+                    </p>
+
+                    {esLargo && !estaAbierto && (
+                      <button
+                        type="button"
+                        onClick={() => toggleDesplegar(c.id)}
+                        className="mt-2 text-xs font-bold text-indigo-400 hover:underline cursor-pointer block"
+                      >
+                        Leer completo...
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleEliminar(c.id)}
+                    className="text-slate-600 hover:text-red-400 transition-colors flex-shrink-0 self-start mt-0.5 cursor-pointer"
+                    title="Eliminar del historial"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
