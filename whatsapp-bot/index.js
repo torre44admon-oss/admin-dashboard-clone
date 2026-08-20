@@ -104,48 +104,71 @@ async function useSupabaseAuthState() {
 }
 
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useSupabaseAuthState()
-  const { version } = await fetchLatestBaileysVersion()
+  try {
+    const { state, saveCreds } = await useSupabaseAuthState()
 
-  sock = makeWASocket({
-    version,
-    auth: state,
-    logger: P({ level: 'silent' }),
-    printQRInTerminal: false,
-    browser: ['Torre44 Bot', 'Chrome', '1.0.0'],
-  })
-
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update
-
-    if (qr) {
-      qrCodeData = await qrcode.toDataURL(qr)
-      isConnected = false
-      connectionStatus = 'waiting_qr'
-      console.log('QR generado - escanea en /qr')
+    // fetchLatestBaileysVersion puede fallar si hay problemas de red en Render.
+    // Usamos una versión de respaldo para no crashear el proceso.
+    let version = [2, 3000, 1015901307]
+    try {
+      const result = await fetchLatestBaileysVersion()
+      if (result?.version) version = result.version
+    } catch (vErr) {
+      console.warn('⚠️ No se pudo obtener la versión de WA, usando versión de respaldo:', version)
     }
 
-    if (connection === 'close') {
-      isConnected = false
-      connectionStatus = 'disconnected'
-      qrCodeData = null
-      const statusCode = (lastDisconnect?.error)?.output?.statusCode
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut
-      console.log('Conexión cerrada. Código:', statusCode, '| Reconectar:', shouldReconnect)
-      if (shouldReconnect) {
-        setTimeout(connectToWhatsApp, 5000)
-      } else {
-        connectionStatus = 'logged_out'
+    sock = makeWASocket({
+      version,
+      auth: state,
+      logger: P({ level: 'silent' }),
+      printQRInTerminal: false,
+      browser: ['Torre44 Bot', 'Chrome', '1.0.0'],
+    })
+
+    sock.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect, qr } = update
+
+      if (qr) {
+        try {
+          qrCodeData = await qrcode.toDataURL(qr)
+        } catch (qrErr) {
+          console.error('Error generando QR:', qrErr.message)
+        }
+        isConnected = false
+        connectionStatus = 'waiting_qr'
+        console.log('QR generado - escanea en /qr')
       }
-    } else if (connection === 'open') {
-      isConnected = true
-      connectionStatus = 'connected'
-      qrCodeData = null
-      console.log('✅ Conectado a WhatsApp!')
-    }
-  })
 
-  sock.ev.on('creds.update', saveCreds)
+      if (connection === 'close') {
+        isConnected = false
+        connectionStatus = 'disconnected'
+        qrCodeData = null
+        const statusCode = (lastDisconnect?.error)?.output?.statusCode
+        const shouldReconnect = statusCode !== DisconnectReason.loggedOut
+        console.log('Conexión cerrada. Código:', statusCode, '| Reconectar:', shouldReconnect)
+        if (shouldReconnect) {
+          setTimeout(connectToWhatsApp, 5000)
+        } else {
+          connectionStatus = 'logged_out'
+        }
+      } else if (connection === 'open') {
+        isConnected = true
+        connectionStatus = 'connected'
+        qrCodeData = null
+        console.log('✅ Conectado a WhatsApp!')
+      }
+    })
+
+    sock.ev.on('creds.update', saveCreds)
+
+  } catch (err) {
+    console.error('❌ Error en connectToWhatsApp:', err.message)
+    isConnected = false
+    connectionStatus = 'error'
+    // Reintentar en 10 segundos en vez de crashear
+    console.log('🔄 Reintentando conexión en 10 segundos...')
+    setTimeout(connectToWhatsApp, 10000)
+  }
 }
 
 // ── Middleware de seguridad ──────────────────────────────────────
@@ -257,4 +280,17 @@ const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`🤖 Bot servidor corriendo en puerto ${PORT}`)
   connectToWhatsApp()
+})
+
+// ── Manejadores globales para evitar crash (exit code 1) ──────────
+// En Render/Node.js, un UnhandledPromiseRejection sin capturar mata el proceso.
+// Estos manejadores previenen que el servicio crashee por errores de red de Baileys.
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ UnhandledRejection (no crash):', reason?.message || reason)
+  // No hacemos process.exit() → el servidor sigue vivo
+})
+
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ UncaughtException (no crash):', err.message)
+  // No hacemos process.exit() → el servidor sigue vivo
 })
