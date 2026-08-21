@@ -149,7 +149,16 @@ async function connectToWhatsApp() {
         if (shouldReconnect) {
           setTimeout(connectToWhatsApp, 5000)
         } else {
+          // Sesión cerrada en WhatsApp → limpiar sesión y pedir nuevo QR
           connectionStatus = 'logged_out'
+          console.log('🔄 Sesión cerrada por WhatsApp. Limpiando y generando nuevo QR...')
+          if (supabase) {
+            supabase.from('bot_auth_session').delete().neq('id', 'null').then(() => {
+              setTimeout(connectToWhatsApp, 3000)
+            }).catch(() => setTimeout(connectToWhatsApp, 3000))
+          } else {
+            setTimeout(connectToWhatsApp, 3000)
+          }
         }
       } else if (connection === 'open') {
         isConnected = true
@@ -261,15 +270,35 @@ app.post('/send-group', checkApiKey, async (req, res) => {
 // Desconectar / cerrar sesión
 app.post('/logout', checkApiKey, async (req, res) => {
   try {
-    if (sock) await sock.logout()
+    if (sock) {
+      try { await sock.logout() } catch (_) {}
+    }
+    sock = null
     isConnected = false
     connectionStatus = 'logged_out'
     qrCodeData = null
     if (supabase) {
       await supabase.from('bot_auth_session').delete().neq('id', 'null')
     }
-    res.json({ success: true, message: 'Sesión cerrada. Recarga /qr para conectar nuevo número.' })
+    res.json({ success: true, message: 'Sesión cerrada. Abre /qr para escanear nuevo QR.' })
     setTimeout(connectToWhatsApp, 3000)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Forzar reconexión sin borrar sesión (útil cuando está en logged_out sin QR)
+app.get('/reconnect', checkApiKey, async (req, res) => {
+  try {
+    if (sock) {
+      try { await sock.end() } catch (_) {}
+    }
+    sock = null
+    isConnected = false
+    qrCodeData = null
+    connectionStatus = 'reconnecting'
+    res.json({ success: true, message: 'Reiniciando conexión. Visita /qr en 5 segundos.' })
+    setTimeout(connectToWhatsApp, 2000)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
