@@ -48,7 +48,12 @@ export async function POST(request: Request) {
       senderPhone = "573014130109"
     }
 
-    const messageText = String(message.text?.body || "").toLowerCase().trim()
+    // Normalizar: quitar tildes/acentos y pasar a minúsculas
+    // Así "Envía 303", "Avíso", "Enviá" etc. funcionan igual que "envia"
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+
+    const messageText = normalize(String(message.text?.body || ""))
 
     // Determinar si es un mensaje que debe procesarse
     const palabrasClave = [
@@ -90,8 +95,9 @@ export async function POST(request: Request) {
     const isAdmin = commandPhones.includes(senderPhone) || senderPhone === "573014130109"
 
     const esComandoReporte = messageText === "reporte" || messageText === "informe"
+    // Acepta: "envia 303", "envía 303", "aviso 101", "enviar 501" etc.
     const matchApto = messageText.match(/^(enviar|envia|envie|aviso|cobro)\s+([0-9a-zA-Z-]+)$/)
-    const esEnvioSolo = messageText === "enviar" || messageText === "envia" || messageText === "envie" || messageText === "aviso"
+    const esEnvioSolo = ["enviar", "envia", "envie", "aviso"].includes(messageText)
 
     const coincide = isTestRequest || coincidePalabra || (isAdmin && (esComandoReporte || !!matchApto))
 
