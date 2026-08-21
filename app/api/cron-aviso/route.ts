@@ -134,10 +134,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, message: "No hay unidades para procesar." })
     }
 
-    // Mes y año del ciclo de cobro → mes ACTUAL (no el siguiente)
+    // Mes y año del ciclo de cobro:
+    // - Solicitud manual o por unidad específica → mes ACTUAL
+    //   (el propietario pide su aviso del mes en curso)
+    // - Cron automático (ej. día 28 de agosto) → mes SIGUIENTE
+    //   (se genera la factura anticipada del próximo mes)
     const mesesNombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
-    const mesVigente = mesesNombres[hoyColombia.getMonth()]
-    const anoVigente = hoyColombia.getFullYear()
+    const esManualOPorUnidad = isManual || !!singleUnidad
+    const fechaCiclo = esManualOPorUnidad
+      ? hoyColombia                                                          // mes actual
+      : new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1) // mes siguiente
+    const mesVigente = mesesNombres[fechaCiclo.getMonth()]
+    const anoVigente = fechaCiclo.getFullYear()
     const periodoTexto = `${mesVigente} de ${anoVigente}`
 
     const resultados: any[] = []
