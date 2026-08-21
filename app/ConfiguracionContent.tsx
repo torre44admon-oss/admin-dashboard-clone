@@ -99,7 +99,7 @@ export function ConfiguracionContent() {
   const [botRailwayUrl, setBotRailwayUrl] = useState("")
   const [botApiKey, setBotApiKey] = useState("")
   const [botGrupoId, setBotGrupoId] = useState("")
-  const [botEstado, setBotEstado] = useState<"connected"|"disconnected"|"waiting_qr"|"unknown">("unknown")
+  const [botEstado, setBotEstado] = useState<"connected"|"disconnected"|"waiting_qr"|"unknown"|"checking">("unknown")
   const [botGrupos, setBotGrupos] = useState<{id:string;name:string;participants:number}[]>([])
   const [guardandoBot, setGuardandoBot] = useState(false)
   const [cargandoBotStatus, setCargandoBotStatus] = useState(false)
@@ -307,6 +307,14 @@ export function ConfiguracionContent() {
           if (b.railway_bot_url) setBotRailwayUrl(b.railway_bot_url)
           if (b.bot_api_key) setBotApiKey(b.bot_api_key)
           if (b.grupo_whatsapp_id) setBotGrupoId(b.grupo_whatsapp_id)
+          // Auto-chequear estado del bot al cargar la página
+          if (b.railway_bot_url) {
+            setBotEstado("checking")
+            fetch(`${b.railway_bot_url}/status`, { signal: AbortSignal.timeout(8000) })
+              .then(r => r.json())
+              .then(d => setBotEstado(d.status || (d.connected ? "connected" : "disconnected")))
+              .catch(() => setBotEstado("disconnected"))
+          }
         }
 
       } catch (err) {
@@ -1784,6 +1792,10 @@ export function ConfiguracionContent() {
             ) : botEstado === "waiting_qr" ? (
               <span className="flex items-center gap-1.5 text-xs text-yellow-400 bg-yellow-500/10 px-2.5 py-1 rounded-full">
                 <QrCode className="w-3 h-3" /> Esperando QR
+              </span>
+            ) : botEstado === "checking" || botEstado === "unknown" ? (
+              <span className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Verificando...
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-500/10 px-2.5 py-1 rounded-full">
