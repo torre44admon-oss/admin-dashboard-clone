@@ -223,9 +223,8 @@ export async function POST(request: Request) {
 
         const mesesNombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
         const hoyColombia = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }))
-        const fechaCiclo = new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1)
-        const mesVigente = mesesNombres[fechaCiclo.getMonth()]
-        const anoVigente = fechaCiclo.getFullYear()
+        const mesVigente = mesesNombres[hoyColombia.getMonth()]
+        const anoVigente = hoyColombia.getFullYear()
         const periodoTexto = `${mesVigente} de ${anoVigente}`
 
         // Propietario escribe "envia" → imagen del aviso

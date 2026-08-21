@@ -134,11 +134,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, message: "No hay unidades para procesar." })
     }
 
-    // Mes y año del ciclo de cobro
+    // Mes y año del ciclo de cobro → mes ACTUAL (no el siguiente)
     const mesesNombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
-    const fechaCiclo = new Date(hoyColombia.getFullYear(), hoyColombia.getMonth() + 1, 1)
-    const mesVigente = mesesNombres[fechaCiclo.getMonth()]
-    const anoVigente = fechaCiclo.getFullYear()
+    const mesVigente = mesesNombres[hoyColombia.getMonth()]
+    const anoVigente = hoyColombia.getFullYear()
     const periodoTexto = `${mesVigente} de ${anoVigente}`
 
     const resultados: any[] = []
