@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
@@ -111,16 +111,12 @@ export function ConfiguracionContent() {
   const [cargandoExcel, setCargandoExcel] = useState(false)
   const [cargandoPdf, setCargandoPdf] = useState(false)
 
-  // ── GENERAR PDF COMPLETO ─────────────────────────────────────────
+  // â”€â”€ GENERAR PDF COMPLETO (solo jsPDF nativo, sin autotable) â”€â”€â”€â”€â”€â”€
   const generarPDF = async () => {
     setCargandoPdf(true)
     try {
-      const jsPDFModule = await import("jspdf")
-      const autoTableModule = await import("jspdf-autotable")
-      const jsPDF = jsPDFModule.default
-      const autoTable = autoTableModule.default
+      const { default: jsPDF } = await import("jspdf")
 
-      // Obtener todos los datos en paralelo
       const [unidadesRes, mensualidadesRes, multasRes, proyectosRes, carteraRes, torreRes] = await Promise.all([
         supabase.from("unidades").select("*").order("unidad"),
         supabase.from("mensualidades").select("*").order("unidad"),
@@ -136,7 +132,6 @@ export function ConfiguracionContent() {
       const proyectos = proyectosRes.data || []
       const cartera = carteraRes.data || []
       const torreConfig = torreRes.data?.[0] || {}
-
       const nombreTorre = torreConfig.nombre_torre || "Torre 44"
       const ahora = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" })
       const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
@@ -146,145 +141,120 @@ export function ConfiguracionContent() {
 
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
       const W = doc.internal.pageSize.getWidth()
-
+      const H = doc.internal.pageSize.getHeight()
+      const ML = 14, TW = W - 28
       const fmt = (n: number) => `$${Number(n || 0).toLocaleString("es-CO")}`
+      let cy = 0
 
-      // ── ENCABEZADO ──
-      doc.setFillColor(15, 23, 42)
-      doc.rect(0, 0, W, 35, "F")
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(18)
-      doc.setFont("helvetica", "bold")
-      doc.text(nombreTorre, W / 2, 14, { align: "center" })
-      doc.setFontSize(10)
-      doc.setFont("helvetica", "normal")
-      doc.text("REPORTE COMPLETO DE APARTAMENTOS", W / 2, 21, { align: "center" })
-      doc.setFontSize(8)
-      doc.setTextColor(148, 163, 184)
-      doc.text(`Generado: ${ahora}`, W / 2, 28, { align: "center" })
+      const newPage = () => { doc.addPage(); cy = 20 }
+      const checkSpace = (need: number) => { if (cy + need > H - 15) newPage() }
 
-      // ── RESUMEN GENERAL ──
-      doc.setTextColor(15, 23, 42)
-      doc.setFontSize(11)
-      doc.setFont("helvetica", "bold")
-      doc.text("RESUMEN GENERAL", 14, 44)
+      const drawRow = (
+        y: number, cols: string[], widths: number[],
+        opts: { bg?: [number,number,number]; tc?: [number,number,number]; bold?: boolean; fs?: number; rh?: number } = {}
+      ) => {
+        const rh = opts.rh ?? 6
+        if (opts.bg) { doc.setFillColor(opts.bg[0],opts.bg[1],opts.bg[2]); doc.rect(ML,y,TW,rh,"F") }
+        doc.setFontSize(opts.fs ?? 7)
+        doc.setFont("helvetica", opts.bold ? "bold" : "normal")
+        const tc = opts.tc ?? [30,41,59]
+        doc.setTextColor(tc[0],tc[1],tc[2])
+        let x = ML + 2
+        cols.forEach((txt,i) => { doc.text(String(txt ?? "").substring(0,60),x,y+rh-1.8); x += widths[i] })
+        doc.setDrawColor(220,220,220)
+        doc.line(ML,y+rh,ML+TW,y+rh)
+        return rh
+      }
 
-      const totalUnidades = unidades.length
-      const totalDeudaCartera = cartera.reduce((s: number, c: any) => s + (Number(c.deuda) || 0), 0)
-      const totalMultasPend = multas.filter((m: any) => ["Pendiente","Vencida"].includes(m.estado)).reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
-      const totalProyectosPend = proyectos.filter((p: any) => p.estado === "Pendiente").reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
-      const mensActualesPend = mensualidades.filter((m: any) => m.mes === mesActual && m.anio === anioActual && m.estado === "Pendiente")
-      const totalMensPend = mensActualesPend.reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
+      // ENCABEZADO
+      doc.setFillColor(15,23,42); doc.rect(0,0,W,32,"F")
+      doc.setTextColor(255,255,255)
+      doc.setFontSize(16); doc.setFont("helvetica","bold")
+      doc.text(nombreTorre,W/2,13,{align:"center"})
+      doc.setFontSize(9); doc.setFont("helvetica","normal")
+      doc.text("REPORTE COMPLETO DE APARTAMENTOS",W/2,20,{align:"center"})
+      doc.setFontSize(7); doc.setTextColor(148,163,184)
+      doc.text(`Generado: ${ahora}`,W/2,27,{align:"center"})
+      cy = 38
 
-      autoTable(doc, {
-        startY: 48,
-        head: [["Concepto", "Valor"]],
-        body: [
-          ["Total apartamentos", `${totalUnidades}`],
-          [`Mensualidades pendientes (${mesActual} ${anioActual})`, fmt(totalMensPend)],
-          ["Deuda en cartera", fmt(totalDeudaCartera)],
-          ["Multas pendientes", fmt(totalMultasPend)],
-          ["Proyectos pendientes", fmt(totalProyectosPend)],
-          ["TOTAL DEUDA GENERAL", fmt(totalDeudaCartera + totalMultasPend + totalProyectosPend + totalMensPend)],
-        ],
-        theme: "grid",
-        headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold", fontSize: 9 },
-        bodyStyles: { fontSize: 8 },
-        alternateRowStyles: { fillColor: [241, 245, 249] },
-        columnStyles: { 0: { cellWidth: 110 }, 1: { cellWidth: 60, halign: "right", fontStyle: "bold" } },
-        didParseCell: (data: any) => {
-          if (data.row.index === 5) {
-            data.cell.styles.fillColor = [239, 68, 68]
-            data.cell.styles.textColor = [255, 255, 255]
-            data.cell.styles.fontStyle = "bold"
-          }
-        }
-      })
+      // RESUMEN GENERAL
+      doc.setTextColor(15,23,42); doc.setFontSize(10); doc.setFont("helvetica","bold")
+      doc.text("RESUMEN GENERAL",ML,cy); cy += 4
 
-      // ── DETALLE POR APARTAMENTO ──
-      let startY = (doc as any).lastAutoTable.finalY + 12
+      const totalDeudaCartera = cartera.reduce((s: number,c: any) => s+(Number(c.deuda)||0),0)
+      const totalMultasPend = multas.filter((m: any) => ["Pendiente","Vencida"].includes(m.estado)).reduce((s: number,m: any) => s+(Number(m.valor)||0),0)
+      const totalProyectosPend = proyectos.filter((p: any) => p.estado==="Pendiente").reduce((s: number,p: any) => s+(Number(p.valor)||0),0)
+      const totalMensPend = mensualidades.filter((m: any) => m.mes===mesActual && String(m.anio)===String(anioActual) && m.estado==="Pendiente").reduce((s: number,m: any) => s+(Number(m.valor)||0),0)
+      const granTotal = totalDeudaCartera+totalMultasPend+totalProyectosPend+totalMensPend
+      const rW = [TW-55,55]
 
-      doc.setFontSize(11)
-      doc.setFont("helvetica", "bold")
-      doc.setTextColor(15, 23, 42)
-      doc.text("DETALLE POR APARTAMENTO", 14, startY)
-      startY += 6
+      cy += drawRow(cy,["Concepto","Valor"],rW,{bg:[30,41,59],tc:[255,255,255],bold:true,fs:8,rh:7})
+      const resRows = [
+        ["Total apartamentos",`${unidades.length}`],
+        [`Mensualidades pendientes (${mesActual} ${anioActual})`,fmt(totalMensPend)],
+        ["Deuda en cartera",fmt(totalDeudaCartera)],
+        ["Multas pendientes",fmt(totalMultasPend)],
+        ["Proyectos pendientes",fmt(totalProyectosPend)],
+      ]
+      resRows.forEach((r,i) => { cy += drawRow(cy,r,rW,{bg: i%2===0 ? [245,247,250]:[255,255,255]}) })
+      cy += drawRow(cy,["TOTAL DEUDA GENERAL",fmt(granTotal)],rW,{bg:[185,28,28],tc:[255,255,255],bold:true,rh:7})
+      cy += 10
+
+      // DETALLE POR APARTAMENTO
+      doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(15,23,42)
+      doc.text("DETALLE POR APARTAMENTO",ML,cy); cy += 5
+
+      const cW = [TW-50-28,50,28]
 
       for (const u of unidades) {
-        // Datos del apartamento
-        const unidadMensualidades = mensualidades.filter((m: any) => m.unidad === u.unidad)
-        const unidadMultas = multas.filter((m: any) => m.unidad === u.unidad && ["Pendiente","Vencida"].includes(m.estado))
-        const unidadProyectos = proyectos.filter((p: any) => p.unidad === u.unidad && p.estado === "Pendiente")
-        const unidadCartera = cartera.find((c: any) => c.unidad === u.unidad)
-        const deudaCartera = Number(unidadCartera?.deuda) || 0
-        const mensPendientes = unidadMensualidades.filter((m: any) => m.estado === "Pendiente")
-        const mensPagadas = unidadMensualidades.filter((m: any) => m.estado === "Pagada")
-        const totalMens = mensPendientes.reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
-        const totalMultas = unidadMultas.reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
-        const totalProy = unidadProyectos.reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
-        const totalDeuda = deudaCartera + totalMens + totalMultas + totalProy
+        const uMens = mensualidades.filter((m: any) => m.unidad===u.unidad)
+        const uMult = multas.filter((m: any) => m.unidad===u.unidad && ["Pendiente","Vencida"].includes(m.estado))
+        const uProy = proyectos.filter((p: any) => p.unidad===u.unidad && p.estado==="Pendiente")
+        const uCart = cartera.find((c: any) => c.unidad===u.unidad)
+        const deudaC = Number(uCart?.deuda)||0
+        const mensPend = uMens.filter((m: any) => m.estado==="Pendiente")
+        const mensPag = uMens.filter((m: any) => m.estado==="Pagada")
+        const totalD = deudaC+
+          mensPend.reduce((s: number,m: any) => s+(Number(m.valor)||0),0)+
+          uMult.reduce((s: number,m: any) => s+(Number(m.valor)||0),0)+
+          uProy.reduce((s: number,p: any) => s+(Number(p.valor)||0),0)
 
-        // Nueva página si no hay espacio
-        if (startY > 240) { doc.addPage(); startY = 20 }
+        const nRows = mensPend.length+Math.min(mensPag.length,3)+uMult.length+uProy.length+(deudaC>0?1:0)||1
+        checkSpace(10+nRows*6+16)
 
-        // Mini encabezado del apartamento
-        const colorHeader: [number, number, number] = totalDeuda > 0 ? [239, 68, 68] : [34, 197, 94]
-        doc.setFillColor(...colorHeader)
-        doc.rect(14, startY, W - 28, 7, "F")
-        doc.setTextColor(255, 255, 255)
-        doc.setFontSize(8)
-        doc.setFont("helvetica", "bold")
-        doc.text(`APTO ${u.unidad}  |  ${u.propietario || "Sin propietario"}  |  Piso ${u.piso || "-"}  |  Tel: ${u.telefono || "N/A"}`, 16, startY + 5)
-        doc.text(totalDeuda > 0 ? `DEBE: ${fmt(totalDeuda)}` : "AL DÍA ✓", W - 16, startY + 5, { align: "right" })
-        startY += 9
+        const hc: [number,number,number] = totalD>0 ? [185,28,28]:[21,128,61]
+        doc.setFillColor(hc[0],hc[1],hc[2]); doc.rect(ML,cy,TW,8,"F")
+        doc.setTextColor(255,255,255); doc.setFontSize(7.5); doc.setFont("helvetica","bold")
+        doc.text(`APTO ${u.unidad}  |  ${(u.propietario||"Sin nombre").substring(0,28)}  |  Piso ${u.piso||"-"}  |  Tel: ${u.telefono||"N/A"}`,ML+2,cy+5.5)
+        doc.text(totalD>0 ? `DEBE: ${fmt(totalD)}`:"AL DIA",W-16,cy+5.5,{align:"right"})
+        cy += 9
 
-        // Tabla de cargos
-        const rows: any[] = []
-        mensPendientes.forEach((m: any) => rows.push([`Mensualidad ${m.mes} ${m.anio}`, "Pendiente", fmt(Number(m.valor))]))
-        mensPagadas.slice(-3).forEach((m: any) => rows.push([`Mensualidad ${m.mes} ${m.anio}`, "Pagada", fmt(Number(m.valor))]))
-        unidadMultas.forEach((m: any) => rows.push([`Multa: ${m.tipo_multa || "General"}`, m.estado, fmt(Number(m.valor))]))
-        unidadProyectos.forEach((p: any) => rows.push([`Proyecto: ${p.proyecto || "General"}`, "Pendiente", fmt(Number(p.valor))]))
-        if (deudaCartera > 0) rows.push(["Deuda en cartera", "Pendiente", fmt(deudaCartera)])
-        if (rows.length === 0) rows.push(["Sin cargos registrados", "-", "$0"])
+        cy += drawRow(cy,["Concepto","Estado","Valor"],cW,{bg:[51,65,85],tc:[255,255,255],bold:true,rh:6})
 
-        autoTable(doc, {
-          startY,
-          head: [["Concepto", "Estado", "Valor"]],
-          body: rows,
-          theme: "striped",
-          headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 7, fontStyle: "bold" },
-          bodyStyles: { fontSize: 7 },
-          alternateRowStyles: { fillColor: [248, 250, 252] },
-          columnStyles: { 0: { cellWidth: 100 }, 1: { cellWidth: 40 }, 2: { cellWidth: 30, halign: "right" } },
-          margin: { left: 14, right: 14 },
-          didParseCell: (data: any) => {
-            if (data.section === "body") {
-              const estado = data.row.raw?.[1]
-              if (estado === "Pendiente" || estado === "Vencida") {
-                data.cell.styles.textColor = [185, 28, 28]
-              } else if (estado === "Pagada") {
-                data.cell.styles.textColor = [21, 128, 61]
-              }
-            }
-          }
+        const cargos: [string,string,string,boolean][] = []
+        mensPend.forEach((m: any) => cargos.push([`Mensualidad ${m.mes} ${m.anio}`,"Pendiente",fmt(Number(m.valor)),true]))
+        mensPag.slice(-3).forEach((m: any) => cargos.push([`Mensualidad ${m.mes} ${m.anio}`,"Pagada",fmt(Number(m.valor)),false]))
+        uMult.forEach((m: any) => cargos.push([`Multa: ${m.tipo_multa||"General"}`,m.estado,fmt(Number(m.valor)),true]))
+        uProy.forEach((p: any) => cargos.push([`Proyecto: ${p.proyecto||"General"}`,"Pendiente",fmt(Number(p.valor)),true]))
+        if (deudaC>0) cargos.push(["Deuda en cartera","Pendiente",fmt(deudaC),true])
+        if (cargos.length===0) cargos.push(["Sin cargos registrados","-","$0",false])
+
+        cargos.forEach(([c,e,v,isPend],i) => {
+          const bg: [number,number,number] = i%2===0?[248,250,252]:[255,255,255]
+          const tc: [number,number,number] = isPend&&e!=="Pagada"?[185,28,28]:e==="Pagada"?[21,128,61]:[30,41,59]
+          cy += drawRow(cy,[c,e,v],cW,{bg,tc,rh:6})
         })
-
-        startY = (doc as any).lastAutoTable.finalY + 8
+        cy += 5
       }
 
-      // ── PIE DE PÁGINA en todas las páginas ──
       const totalPages = doc.getNumberOfPages()
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i)
-        doc.setFontSize(7)
-        doc.setTextColor(148, 163, 184)
-        doc.text(`${nombreTorre} - Reporte de apartamentos - Página ${i} de ${totalPages}`, W / 2, 290, { align: "center" })
+      for (let i=1;i<=totalPages;i++) {
+        doc.setPage(i); doc.setFontSize(7); doc.setTextColor(148,163,184)
+        doc.text(`${nombreTorre} - Reporte de apartamentos - Pag. ${i} de ${totalPages}`,W/2,H-6,{align:"center"})
       }
 
-      // ── DESCARGAR ──
-      const fecha = hoyCol.toISOString().split("T")[0]
-      doc.save(`reporte-apartamentos-${fecha}.pdf`)
-      toast.success("✅ PDF generado correctamente")
+      doc.save(`reporte-apartamentos-${hoyCol.toISOString().split("T")[0]}.pdf`)
+      toast.success("PDF generado correctamente")
     } catch (e: any) {
       console.error(e)
       toast.error(`Error al generar PDF: ${e.message}`)
@@ -292,7 +262,6 @@ export function ConfiguracionContent() {
       setCargandoPdf(false)
     }
   }
-
   const enviarAvisosAhora = async () => {
     setEnviandoAvisos(true)
     try {
