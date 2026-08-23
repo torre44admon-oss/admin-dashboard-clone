@@ -19,7 +19,8 @@ import {
   WifiOff,
   QrCode,
   Users,
-  RefreshCw
+  RefreshCw,
+  FileText
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
@@ -108,6 +109,189 @@ export function ConfiguracionContent() {
   const [enviandoAvisos, setEnviandoAvisos] = useState(false)
   const [cargandoRespaldo, setCargandoRespaldo] = useState(false)
   const [cargandoExcel, setCargandoExcel] = useState(false)
+  const [cargandoPdf, setCargandoPdf] = useState(false)
+
+  // ── GENERAR PDF COMPLETO ─────────────────────────────────────────
+  const generarPDF = async () => {
+    setCargandoPdf(true)
+    try {
+      const jsPDFModule = await import("jspdf")
+      const autoTableModule = await import("jspdf-autotable")
+      const jsPDF = jsPDFModule.default
+      const autoTable = autoTableModule.default
+
+      // Obtener todos los datos en paralelo
+      const [unidadesRes, mensualidadesRes, multasRes, proyectosRes, carteraRes, torreRes] = await Promise.all([
+        supabase.from("unidades").select("*").order("unidad"),
+        supabase.from("mensualidades").select("*").order("unidad"),
+        supabase.from("multas_asignadas").select("*"),
+        supabase.from("proyectos_asignados").select("*"),
+        supabase.from("cartera").select("*"),
+        supabase.from("configuracion_torre").select("*").limit(1)
+      ])
+
+      const unidades = unidadesRes.data || []
+      const mensualidades = mensualidadesRes.data || []
+      const multas = multasRes.data || []
+      const proyectos = proyectosRes.data || []
+      const cartera = carteraRes.data || []
+      const torreConfig = torreRes.data?.[0] || {}
+
+      const nombreTorre = torreConfig.nombre_torre || "Torre 44"
+      const ahora = new Date().toLocaleString("es-CO", { timeZone: "America/Bogota" })
+      const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+      const hoyCol = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }))
+      const mesActual = meses[hoyCol.getMonth()]
+      const anioActual = hoyCol.getFullYear()
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+      const W = doc.internal.pageSize.getWidth()
+
+      const fmt = (n: number) => `$${Number(n || 0).toLocaleString("es-CO")}`
+
+      // ── ENCABEZADO ──
+      doc.setFillColor(15, 23, 42)
+      doc.rect(0, 0, W, 35, "F")
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(18)
+      doc.setFont("helvetica", "bold")
+      doc.text(nombreTorre, W / 2, 14, { align: "center" })
+      doc.setFontSize(10)
+      doc.setFont("helvetica", "normal")
+      doc.text("REPORTE COMPLETO DE APARTAMENTOS", W / 2, 21, { align: "center" })
+      doc.setFontSize(8)
+      doc.setTextColor(148, 163, 184)
+      doc.text(`Generado: ${ahora}`, W / 2, 28, { align: "center" })
+
+      // ── RESUMEN GENERAL ──
+      doc.setTextColor(15, 23, 42)
+      doc.setFontSize(11)
+      doc.setFont("helvetica", "bold")
+      doc.text("RESUMEN GENERAL", 14, 44)
+
+      const totalUnidades = unidades.length
+      const totalDeudaCartera = cartera.reduce((s: number, c: any) => s + (Number(c.deuda) || 0), 0)
+      const totalMultasPend = multas.filter((m: any) => ["Pendiente","Vencida"].includes(m.estado)).reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
+      const totalProyectosPend = proyectos.filter((p: any) => p.estado === "Pendiente").reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
+      const mensActualesPend = mensualidades.filter((m: any) => m.mes === mesActual && m.anio === anioActual && m.estado === "Pendiente")
+      const totalMensPend = mensActualesPend.reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
+
+      autoTable(doc, {
+        startY: 48,
+        head: [["Concepto", "Valor"]],
+        body: [
+          ["Total apartamentos", `${totalUnidades}`],
+          [`Mensualidades pendientes (${mesActual} ${anioActual})`, fmt(totalMensPend)],
+          ["Deuda en cartera", fmt(totalDeudaCartera)],
+          ["Multas pendientes", fmt(totalMultasPend)],
+          ["Proyectos pendientes", fmt(totalProyectosPend)],
+          ["TOTAL DEUDA GENERAL", fmt(totalDeudaCartera + totalMultasPend + totalProyectosPend + totalMensPend)],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold", fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        alternateRowStyles: { fillColor: [241, 245, 249] },
+        columnStyles: { 0: { cellWidth: 110 }, 1: { cellWidth: 60, halign: "right", fontStyle: "bold" } },
+        didParseCell: (data: any) => {
+          if (data.row.index === 5) {
+            data.cell.styles.fillColor = [239, 68, 68]
+            data.cell.styles.textColor = [255, 255, 255]
+            data.cell.styles.fontStyle = "bold"
+          }
+        }
+      })
+
+      // ── DETALLE POR APARTAMENTO ──
+      let startY = (doc as any).lastAutoTable.finalY + 12
+
+      doc.setFontSize(11)
+      doc.setFont("helvetica", "bold")
+      doc.setTextColor(15, 23, 42)
+      doc.text("DETALLE POR APARTAMENTO", 14, startY)
+      startY += 6
+
+      for (const u of unidades) {
+        // Datos del apartamento
+        const unidadMensualidades = mensualidades.filter((m: any) => m.unidad === u.unidad)
+        const unidadMultas = multas.filter((m: any) => m.unidad === u.unidad && ["Pendiente","Vencida"].includes(m.estado))
+        const unidadProyectos = proyectos.filter((p: any) => p.unidad === u.unidad && p.estado === "Pendiente")
+        const unidadCartera = cartera.find((c: any) => c.unidad === u.unidad)
+        const deudaCartera = Number(unidadCartera?.deuda) || 0
+        const mensPendientes = unidadMensualidades.filter((m: any) => m.estado === "Pendiente")
+        const mensPagadas = unidadMensualidades.filter((m: any) => m.estado === "Pagada")
+        const totalMens = mensPendientes.reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
+        const totalMultas = unidadMultas.reduce((s: number, m: any) => s + (Number(m.valor) || 0), 0)
+        const totalProy = unidadProyectos.reduce((s: number, p: any) => s + (Number(p.valor) || 0), 0)
+        const totalDeuda = deudaCartera + totalMens + totalMultas + totalProy
+
+        // Nueva página si no hay espacio
+        if (startY > 240) { doc.addPage(); startY = 20 }
+
+        // Mini encabezado del apartamento
+        const colorHeader: [number, number, number] = totalDeuda > 0 ? [239, 68, 68] : [34, 197, 94]
+        doc.setFillColor(...colorHeader)
+        doc.rect(14, startY, W - 28, 7, "F")
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(8)
+        doc.setFont("helvetica", "bold")
+        doc.text(`APTO ${u.unidad}  |  ${u.propietario || "Sin propietario"}  |  Piso ${u.piso || "-"}  |  Tel: ${u.telefono || "N/A"}`, 16, startY + 5)
+        doc.text(totalDeuda > 0 ? `DEBE: ${fmt(totalDeuda)}` : "AL DÍA ✓", W - 16, startY + 5, { align: "right" })
+        startY += 9
+
+        // Tabla de cargos
+        const rows: any[] = []
+        mensPendientes.forEach((m: any) => rows.push([`Mensualidad ${m.mes} ${m.anio}`, "Pendiente", fmt(Number(m.valor))]))
+        mensPagadas.slice(-3).forEach((m: any) => rows.push([`Mensualidad ${m.mes} ${m.anio}`, "Pagada", fmt(Number(m.valor))]))
+        unidadMultas.forEach((m: any) => rows.push([`Multa: ${m.tipo_multa || "General"}`, m.estado, fmt(Number(m.valor))]))
+        unidadProyectos.forEach((p: any) => rows.push([`Proyecto: ${p.proyecto || "General"}`, "Pendiente", fmt(Number(p.valor))]))
+        if (deudaCartera > 0) rows.push(["Deuda en cartera", "Pendiente", fmt(deudaCartera)])
+        if (rows.length === 0) rows.push(["Sin cargos registrados", "-", "$0"])
+
+        autoTable(doc, {
+          startY,
+          head: [["Concepto", "Estado", "Valor"]],
+          body: rows,
+          theme: "striped",
+          headStyles: { fillColor: [30, 41, 59], textColor: 255, fontSize: 7, fontStyle: "bold" },
+          bodyStyles: { fontSize: 7 },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          columnStyles: { 0: { cellWidth: 100 }, 1: { cellWidth: 40 }, 2: { cellWidth: 30, halign: "right" } },
+          margin: { left: 14, right: 14 },
+          didParseCell: (data: any) => {
+            if (data.section === "body") {
+              const estado = data.row.raw?.[1]
+              if (estado === "Pendiente" || estado === "Vencida") {
+                data.cell.styles.textColor = [185, 28, 28]
+              } else if (estado === "Pagada") {
+                data.cell.styles.textColor = [21, 128, 61]
+              }
+            }
+          }
+        })
+
+        startY = (doc as any).lastAutoTable.finalY + 8
+      }
+
+      // ── PIE DE PÁGINA en todas las páginas ──
+      const totalPages = doc.getNumberOfPages()
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i)
+        doc.setFontSize(7)
+        doc.setTextColor(148, 163, 184)
+        doc.text(`${nombreTorre} - Reporte de apartamentos - Página ${i} de ${totalPages}`, W / 2, 290, { align: "center" })
+      }
+
+      // ── DESCARGAR ──
+      const fecha = hoyCol.toISOString().split("T")[0]
+      doc.save(`reporte-apartamentos-${fecha}.pdf`)
+      toast.success("✅ PDF generado correctamente")
+    } catch (e: any) {
+      console.error(e)
+      toast.error(`Error al generar PDF: ${e.message}`)
+    } finally {
+      setCargandoPdf(false)
+    }
+  }
 
   const enviarAvisosAhora = async () => {
     setEnviandoAvisos(true)
@@ -1748,10 +1932,20 @@ export function ConfiguracionContent() {
                   type="button"
                   onClick={exportarAExcel}
                   disabled={cargandoExcel}
-                  className="sm:col-span-2 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-500/60 hover:from-emerald-500/20 hover:to-teal-500/20 text-emerald-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                  className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 hover:border-emerald-500/60 hover:from-emerald-500/20 hover:to-teal-500/20 text-emerald-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   <Database className="w-4 h-4 text-emerald-400" />
                   {cargandoExcel ? "Generando Excel..." : "Exportar a Excel"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={generarPDF}
+                  disabled={cargandoPdf}
+                  className="sm:col-span-2 bg-gradient-to-r from-red-500/10 to-rose-500/10 border border-red-500/30 hover:border-red-500/60 hover:from-red-500/20 hover:to-rose-500/20 text-red-300 font-bold h-[44px] rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  <FileText className="w-4 h-4 text-red-400" />
+                  {cargandoPdf ? "Generando PDF..." : "📄 Reporte PDF Completo"}
                 </button>
               </div>
 
