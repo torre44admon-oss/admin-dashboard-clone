@@ -109,14 +109,41 @@ export function RegistrarPagoModal({
     }
   }, [multaSeleccionada, multasPendientes])
 
+  const [moraCalculadaModal, setMoraCalculadaModal] = useState(0)
+
   useEffect(() => {
     const mensualidad = mensualidadesPendientes.find(
       (m) => String(m.id) === mensualidadSeleccionada
     )
     if (mensualidad) {
-      setValorPago(String(mensualidad.valor))
+      const valorBase = Number(mensualidad.valor) || 0
+      
+      // Calcular días de atraso si la fecha de pago seleccionada supera la fecha límite (día 10)
+      const fechaLim = mensualidad.fecha_limite 
+        ? new Date(mensualidad.fecha_limite)
+        : new Date(fechaPago) // fallback
+      
+      if (mensualidad.fecha_limite) fechaLim.setHours(0,0,0,0)
+      
+      const fPago = new Date(fechaPago)
+      fPago.setHours(0,0,0,0)
+
+      const diffTime = fPago.getTime() - fechaLim.getTime()
+      const diasRetraso = diffTime > 0 ? Math.floor(diffTime / (1000 * 60 * 60 * 24)) : 0
+
+      if (diasRetraso > 0) {
+        const tasaDiaria = (2.4 / 100) / 30
+        const mora = Math.round(valorBase * tasaDiaria * diasRetraso)
+        setMoraCalculadaModal(mora)
+        setValorPago(String(valorBase + mora))
+      } else {
+        setMoraCalculadaModal(0)
+        setValorPago(String(valorBase))
+      }
+    } else {
+      setMoraCalculadaModal(0)
     }
-  }, [mensualidadSeleccionada, mensualidadesPendientes])
+  }, [mensualidadSeleccionada, mensualidadesPendientes, fechaPago])
   
   const registrarPago = async () => {
     if (!unidadSeleccionada) {
@@ -380,6 +407,13 @@ export function RegistrarPagoModal({
                   </p>
                 )}
               </div>
+
+              {moraCalculadaModal > 0 && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300 flex items-center justify-between my-3">
+                  <span>⚠️ Incluye mora por pago extemporáneo (después del límite):</span>
+                  <span className="font-bold text-amber-200">+$ {moraCalculadaModal.toLocaleString("es-CO")}</span>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
