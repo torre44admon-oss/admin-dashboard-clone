@@ -33,6 +33,7 @@ export function RegistrarPagoModal({
   const [mensualidadesPendientes, setMensualidadesPendientes] = useState<any[]>([])
   
   const [valorPago, setValorPago] = useState("")
+  const [moraCalculadaModal, setMoraCalculadaModal] = useState(0)
   const [fechaPago, setFechaPago] = useState(
     new Date().toISOString().split("T")[0]
   )
