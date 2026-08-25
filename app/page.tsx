@@ -85,10 +85,8 @@ export default function Dashboard() {
       )
 
     if (!session) {
-
       router.push("/login")
       return
-
     }
 
     setMounted(true)
