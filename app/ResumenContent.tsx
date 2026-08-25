@@ -149,15 +149,10 @@ export function ResumenContent({
     // Sort by timestamp descending
     combined.sort((a, b) => b.timestamp - a.timestamp)
 
-    // Find the active billing cycle month (latest inserted record)
+    // El mes activo de control de pagos debe ser el MES CALENDARIO ACTUAL (Agosto de 2026)
     let activeMes = getMesActual()
     let activeAnio = new Date().getFullYear().toString()
 
-    if (todasMensualidades && todasMensualidades.length > 0) {
-      const sorted = [...todasMensualidades].sort((a, b) => Number(b.id) - Number(a.id))
-      activeMes = sorted[0].mes
-      activeAnio = sorted[0].anio
-    }
     setActiveMesName(activeMes)
 
     // Calculate Pagos del Mes (Unique paid apartments for the active month/year)
