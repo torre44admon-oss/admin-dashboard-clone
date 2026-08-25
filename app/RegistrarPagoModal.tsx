@@ -109,41 +109,43 @@ export function RegistrarPagoModal({
     }
   }, [multaSeleccionada, multasPendientes])
 
-  const [moraCalculadaModal, setMoraCalculadaModal] = useState(0)
+  const [mensualidadesSeleccionadas, setMensualidadesSeleccionadas] = useState<number[]>([])
 
   useEffect(() => {
-    const mensualidad = mensualidadesPendientes.find(
-      (m) => String(m.id) === mensualidadSeleccionada
-    )
-    if (mensualidad) {
-      const valorBase = Number(mensualidad.valor) || 0
-      
-      // Calcular días de atraso si la fecha de pago seleccionada supera la fecha límite (día 10)
-      const fechaLim = mensualidad.fecha_limite 
-        ? new Date(mensualidad.fecha_limite)
-        : new Date(fechaPago) // fallback
-      
-      if (mensualidad.fecha_limite) fechaLim.setHours(0,0,0,0)
-      
-      const fPago = new Date(fechaPago)
-      fPago.setHours(0,0,0,0)
-
-      const diffTime = fPago.getTime() - fechaLim.getTime()
-      const diasRetraso = diffTime > 0 ? Math.floor(diffTime / (1000 * 60 * 60 * 24)) : 0
-
-      if (diasRetraso > 0) {
-        const tasaDiaria = (2.4 / 100) / 30
-        const mora = Math.round(valorBase * tasaDiaria * diasRetraso)
-        setMoraCalculadaModal(mora)
-        setValorPago(String(valorBase + mora))
-      } else {
-        setMoraCalculadaModal(0)
-        setValorPago(String(valorBase))
-      }
-    } else {
+    if (mensualidadesSeleccionadas.length === 0) {
+      setValorPago("")
       setMoraCalculadaModal(0)
+      return
     }
-  }, [mensualidadSeleccionada, mensualidadesPendientes, fechaPago])
+
+    let sumaBase = 0
+    let sumaMora = 0
+
+    const fPago = new Date(fechaPago)
+    fPago.setHours(0,0,0,0)
+    const tasaDiaria = (2.4 / 100) / 30
+
+    mensualidadesSeleccionadas.forEach(id => {
+      const m = mensualidadesPendientes.find(item => Number(item.id) === Number(id))
+      if (m) {
+        const valBase = Number(m.valor) || 0
+        sumaBase += valBase
+
+        const fechaLim = m.fecha_limite ? new Date(m.fecha_limite) : new Date(fechaPago)
+        if (m.fecha_limite) fechaLim.setHours(0,0,0,0)
+
+        const diffTime = fPago.getTime() - fechaLim.getTime()
+        const diasRetraso = diffTime > 0 ? Math.floor(diffTime / (1000 * 60 * 60 * 24)) : 0
+
+        if (diasRetraso > 0) {
+          sumaMora += Math.round(valBase * tasaDiaria * diasRetraso)
+        }
+      }
+    })
+
+    setMoraCalculadaModal(sumaMora)
+    setValorPago(String(sumaBase + sumaMora))
+  }, [mensualidadesSeleccionadas, mensualidadesPendientes, fechaPago])
   
   const registrarPago = async () => {
     if (!unidadSeleccionada) {
@@ -154,8 +156,8 @@ export function RegistrarPagoModal({
     const montoNum = Number(valorPago) || 0
 
     if (concepto === "Administración") {
-      if (!mensualidadSeleccionada) {
-        toast.warning("Seleccione la mensualidad a pagar")
+      if (mensualidadesSeleccionadas.length === 0) {
+        toast.warning("Seleccione al menos una mensualidad a pagar")
         return
       }
       if (!valorPago) {
@@ -163,25 +165,25 @@ export function RegistrarPagoModal({
         return
       }
 
-      // Update mensualidades table
+      // Update all selected mensualidades in batch
       const { error: errorMensualidad } = await supabase
         .from("mensualidades")
         .update({
           estado: "Pagado",
           fecha_pago: fechaPago
         })
-        .eq("id", Number(mensualidadSeleccionada))
+        .in("id", mensualidadesSeleccionadas)
 
       if (errorMensualidad) {
         console.error(errorMensualidad)
-        toast.error("Error al registrar el pago de mensualidad")
+        toast.error("Error al registrar el pago de mensualidades")
         return
       }
 
-      toast.success("Pago de administración registrado correctamente")
+      toast.success(`Pago de ${mensualidadesSeleccionadas.length} mensualidad(es) registrado correctamente`)
       setUnidadSeleccionada("")
       setValorPago("")
-      setMensualidadSeleccionada("")
+      setMensualidadesSeleccionadas([])
       handleSuccessClose()
       return
     }
@@ -384,27 +386,70 @@ export function RegistrarPagoModal({
           {concepto === "Administración" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Mensualidades Pendientes
-                </label>
-                <select
-                  value={mensualidadSeleccionada}
-                  onChange={(e) => setMensualidadSeleccionada(e.target.value)}
-                  className="w-full bg-[#1B2336] border border-[#1E293B]/80 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                >
-                  <option value="" className="bg-[#131926] text-white">
-                    Selecciona una mensualidad pendiente...
-                  </option>
-                  {mensualidadesPendientes.map((m) => (
-                    <option key={m.id} value={m.id} className="bg-[#131926] text-white">
-                      {m.mes} {m.anio} - ${Number(m.valor).toLocaleString("es-CO")}
-                    </option>
-                  ))}
-                </select>
-                {unidadSeleccionada && mensualidadesPendientes.length === 0 && (
-                  <p className="text-xs text-amber-400 mt-1.5">
-                    Este apartamento no tiene mensualidades pendientes registradas.
-                  </p>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-400">
+                    Mensualidades Pendientes
+                  </label>
+                  {mensualidadesPendientes.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (mensualidadesSeleccionadas.length === mensualidadesPendientes.length) {
+                          setMensualidadesSeleccionadas([])
+                        } else {
+                          setMensualidadesSeleccionadas(mensualidadesPendientes.map(m => m.id))
+                        }
+                      }}
+                      className="text-xs text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
+                    >
+                      {mensualidadesSeleccionadas.length === mensualidadesPendientes.length
+                        ? "Desmarcar todos"
+                        : "✓ Seleccionar todos los meses"}
+                    </button>
+                  )}
+                </div>
+
+                {unidadSeleccionada && mensualidadesPendientes.length > 0 ? (
+                  <div className="space-y-2 max-h-48 overflow-y-auto bg-[#1B2336] border border-[#1E293B]/80 rounded-xl p-3">
+                    {mensualidadesPendientes.map((m) => {
+                      const isChecked = mensualidadesSeleccionadas.includes(m.id)
+                      return (
+                        <label
+                          key={m.id}
+                          className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                            isChecked
+                              ? "bg-blue-600/20 border-blue-500/50 text-white font-medium"
+                              : "bg-[#131926]/60 border-[#1E293B]/50 text-slate-300 hover:bg-[#131926]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setMensualidadesSeleccionadas(prev => [...prev, m.id])
+                                } else {
+                                  setMensualidadesSeleccionadas(prev => prev.filter(id => id !== m.id))
+                                }
+                              }}
+                              className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-700 cursor-pointer"
+                            />
+                            <span>{m.mes} {m.anio}</span>
+                          </div>
+                          <span className="font-semibold text-slate-200">
+                            ${Number(m.valor).toLocaleString("es-CO")}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  unidadSeleccionada && (
+                    <p className="text-xs text-amber-400 mt-1.5">
+                      Este apartamento no tiene mensualidades pendientes registradas.
+                    </p>
+                  )
                 )}
               </div>
 
