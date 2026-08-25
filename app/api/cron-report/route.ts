@@ -172,6 +172,9 @@ export async function GET(request: Request) {
     let lineasApartamentos: string[] = []
     let totalCopropiedad = 0
     let deudoresEncontrados = 0
+    const tasaMoraInfo = config.tasa_mora_anual ? config.tasa_mora_anual : 28.785
+    const tasaDiaria = Math.pow(1 + tasaMoraInfo / 100, 1 / 365) - 1
+    const diaCorteLimite = 10
 
     const formatoPesos = (val: number) => {
       return new Intl.NumberFormat("es-CO", {
@@ -195,11 +198,38 @@ export async function GET(request: Request) {
 
       deudoresEncontrados++
       let totalUnidad = 0
+      let totalMoraGenerada = 0
       let conceptos: string[] = []
 
       if (deudasMens.length > 0) {
+        const mesesN = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+        const mesA = mesesN[hoyColombia.getMonth()].toLowerCase()
+        const anioA = hoyColombia.getFullYear()
+
         const meses = deudasMens.map((m) => `${String(m.mes).toLowerCase()} de ${m.anio}`).join(", ")
-        const subtotalMens = deudasMens.reduce((acc, m) => acc + (Number(m.valor) || 0), 0)
+        let subtotalMens = 0
+        
+        deudasMens.forEach(m => {
+          const valCuota = Number(m.valor) || 0
+          subtotalMens += valCuota
+          
+          const esMesActual = String(m.mes).toLowerCase() === mesA && Number(m.anio) === anioA
+          
+          let fechaLim = m.fecha_limite ? new Date(m.fecha_limite) : null
+          if (!fechaLim) {
+            const idx = mesesN.findIndex(nm => nm.toLowerCase() === String(m.mes).toLowerCase())
+            fechaLim = new Date(Number(m.anio), idx, diaCorteLimite)
+          }
+          fechaLim.setHours(0,0,0,0)
+          
+          const diffTime = hoyColombia.getTime() - fechaLim.getTime()
+          const diasRetraso = diffTime > 0 ? Math.floor(diffTime / 86400000) : 0
+          
+          if (diasRetraso > 0 && !esMesActual) {
+            totalMoraGenerada += Math.round(valCuota * tasaDiaria * diasRetraso)
+          }
+        })
+        
         totalUnidad += subtotalMens
         conceptos.push(`Cuota${deudasMens.length > 1 ? "s" : ""} de ${meses}`)
       }
@@ -222,8 +252,10 @@ export async function GET(request: Request) {
         totalUnidad += deudaAnterior
         conceptos.push("administración anterior")
       }
-
+      
+      totalUnidad += totalMoraGenerada
       totalCopropiedad += totalUnidad
+      
       const nombreProp = u.propietario ? ` | Propietario: ${u.propietario}` : ""
       lineasApartamentos.push(`• *Apto. ${u.unidad}*${nombreProp} | Deuda Total: ${formatoPesos(totalUnidad)}`)
     })
