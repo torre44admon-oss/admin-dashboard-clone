@@ -31,6 +31,7 @@ export function RegistrarPagoModal({
   const [multasPendientes, setMultasPendientes] = useState<any[]>([])
   const [proyectosPendientes, setProyectosPendientes] = useState<any[]>([])
   const [mensualidadesPendientes, setMensualidadesPendientes] = useState<any[]>([])
+  const [tasaDiariaConfig, setTasaDiariaConfig] = useState((2.4 / 100) / 30)
   
   const [valorPago, setValorPago] = useState("")
   const [moraCalculadaModal, setMoraCalculadaModal] = useState(0)
@@ -50,6 +51,19 @@ export function RegistrarPagoModal({
       setMensualidadesPendientes([])
       return
     }
+
+    const cargarConfig = async () => {
+      const { data } = await supabase.from("configuracion_tasas_mora").select("*").order("id", { ascending: false }).limit(1)
+      if (data && data.length > 0) {
+        const t = data[0]
+        const ibc = Number(t.ibc_banco_anual) || 19.19
+        const mult = Number(t.multiplicador_ley) || 1.5
+        const usuraAnual = ibc * mult
+        setTasaDiariaConfig(Math.pow(1 + usuraAnual / 100, 1 / 365) - 1)
+      }
+    }
+    
+    cargarConfig()
 
     const cargarMultasPendientes = async () => {
       const { data, error } = await supabase
@@ -124,7 +138,6 @@ export function RegistrarPagoModal({
 
     const fPago = new Date(fechaPago)
     fPago.setHours(0,0,0,0)
-    const tasaDiaria = (2.4 / 100) / 30
 
     mensualidadesSeleccionadas.forEach(id => {
       const m = mensualidadesPendientes.find(item => Number(item.id) === Number(id))
@@ -139,14 +152,14 @@ export function RegistrarPagoModal({
         const diasRetraso = diffTime > 0 ? Math.floor(diffTime / (1000 * 60 * 60 * 24)) : 0
 
         if (diasRetraso > 0) {
-          sumaMora += Math.round(valBase * tasaDiaria * diasRetraso)
+          sumaMora += Math.round(valBase * tasaDiariaConfig * diasRetraso)
         }
       }
     })
 
     setMoraCalculadaModal(sumaMora)
     setValorPago(String(sumaBase + sumaMora))
-  }, [mensualidadesSeleccionadas, mensualidadesPendientes, fechaPago])
+  }, [mensualidadesSeleccionadas, mensualidadesPendientes, fechaPago, tasaDiariaConfig])
   
   const registrarPago = async () => {
     if (!unidadSeleccionada) {
