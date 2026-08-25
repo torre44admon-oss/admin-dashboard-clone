@@ -228,18 +228,20 @@ export async function GET(request: Request) {
       lineasApartamentos.push(`• *Apto. ${u.unidad}*${nombreProp} | Deuda Total: ${formatoPesos(totalUnidad)}`)
     })
 
+    const mesesNombres = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+    const mesNombreActual = mesesNombres[hoyColombia.getMonth()]
     const diaStr = String(hoyColombia.getDate()).padStart(2, "0")
     const mesStr = String(hoyColombia.getMonth() + 1).padStart(2, "0")
     const fechaFormateada = `${diaStr}/${mesStr}/${hoyColombia.getFullYear()}`
 
     let mensajeReporte = `*INFORME GENERAL DE CARTERA Y MOROSIDAD*\n`
     mensajeReporte += `*CONJUNTO RESIDENCIAL ALTOS DE SANTA ELENA – TORRE 44*\n`
-    mensajeReporte += `Fecha: ${fechaFormateada}\n\n`
-    mensajeReporte += `La Administración informa el estado de morosidad y obligaciones pendientes a la fecha:\n\n`
+    mensajeReporte += `Fecha de corte: ${fechaFormateada} (Mes de ${mesNombreActual})\n\n`
+    mensajeReporte += `La Administración informa el estado de deudas pendientes acumuladas *hasta el mes actual (${mesNombreActual} de ${hoyColombia.getFullYear()})* (no incluye el mes siguiente):\n\n`
     mensajeReporte += `*Relación de Apartamentos y Deudores:*\n\n`
     mensajeReporte += lineasApartamentos.join("\n") + "\n\n"
     mensajeReporte += `*Apartamentos en mora:* ${deudoresEncontrados}\n`
-    mensajeReporte += `*Cartera total adeudada:* ${formatoPesos(totalCopropiedad)}\n\n`
+    mensajeReporte += `*Cartera total adeudada hasta ${mesNombreActual}:* ${formatoPesos(totalCopropiedad)}\n\n`
     mensajeReporte += `Se solicita a los propietarios en mora ponerse al día a la brevedad posible con la administración.\n\n`
     mensajeReporte += `_Reporte generado de forma automática por el sistema de cartera._`
 
