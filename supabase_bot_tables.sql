@@ -8,10 +8,14 @@ CREATE TABLE IF NOT EXISTS configuracion_bot (
   id SERIAL PRIMARY KEY,
   railway_bot_url TEXT,          -- URL del servidor Railway ej: https://xxx.up.railway.app
   bot_api_key TEXT,              -- Clave secreta para proteger los endpoints del bot
-  grupo_whatsapp_id TEXT,        -- ID del grupo ej: 120363...@g.us (se guarda permanentemente)
+  grupo_whatsapp_id TEXT,        -- ID del grupo general ej: 120363...@g.us
+  grupo_reportes_id TEXT,        -- ID del grupo de cartera/reportes privado ej: 120363...@g.us
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Si la tabla ya existe, agregar la columna grupo_reportes_id
+ALTER TABLE configuracion_bot ADD COLUMN IF NOT EXISTS grupo_reportes_id TEXT;
 
 -- Habilitar RLS
 ALTER TABLE configuracion_bot ENABLE ROW LEVEL SECURITY;

@@ -224,22 +224,23 @@ export async function GET(request: Request) {
       }
 
       totalCopropiedad += totalUnidad
-      lineasApartamentos.push(`Apartamento ${u.unidad}: ${conceptos.join(", ")}.`)
+      const nombreProp = u.propietario ? ` | Propietario: ${u.propietario}` : ""
+      lineasApartamentos.push(`• *Apto. ${u.unidad}*${nombreProp} | Deuda Total: ${formatoPesos(totalUnidad)}`)
     })
 
     const diaStr = String(hoyColombia.getDate()).padStart(2, "0")
     const mesStr = String(hoyColombia.getMonth() + 1).padStart(2, "0")
     const fechaFormateada = `${diaStr}/${mesStr}/${hoyColombia.getFullYear()}`
 
-    let mensajeReporte = `*INFORME GENERAL DE CARTERA*\n\n`
+    let mensajeReporte = `*INFORME GENERAL DE CARTERA Y MOROSIDAD*\n`
     mensajeReporte += `*CONJUNTO RESIDENCIAL ALTOS DE SANTA ELENA – TORRE 44*\n`
     mensajeReporte += `Fecha: ${fechaFormateada}\n\n`
-    mensajeReporte += `La Administración informa que, a la fecha del presente informe, existen obligaciones pendientes correspondientes a cuotas de administración, proyectos aprobados y saldos de periodos anteriores.\n\n`
-    mensajeReporte += `*Obligaciones pendientes por apartamento:*\n`
+    mensajeReporte += `La Administración informa el estado de morosidad y obligaciones pendientes a la fecha:\n\n`
+    mensajeReporte += `*Relación de Apartamentos y Deudores:*\n\n`
     mensajeReporte += lineasApartamentos.join("\n") + "\n\n"
-    mensajeReporte += `*Apartamentos con obligaciones pendientes:* ${deudoresEncontrados}\n\n`
-    mensajeReporte += `*Cartera total de la copropiedad:* ${formatoPesos(totalCopropiedad)}\n\n`
-    mensajeReporte += `Se recuerda a los propietarios con obligaciones pendientes que el pago oportuno de las cuotas y proyectos aprobados es fundamental para el funcionamiento, mantenimiento y cumplimiento de los compromisos económicos de la copropiedad.\n\n`
+    mensajeReporte += `*Apartamentos en mora:* ${deudoresEncontrados}\n`
+    mensajeReporte += `*Cartera total adeudada:* ${formatoPesos(totalCopropiedad)}\n\n`
+    mensajeReporte += `Se solicita a los propietarios en mora ponerse al día a la brevedad posible con la administración.\n\n`
     mensajeReporte += `_Reporte generado de forma automática por el sistema de cartera._`
 
     if (deudoresEncontrados === 0) {
