@@ -85,7 +85,7 @@ export default function Dashboard() {
       )
 
     if (!session) {
-      router.push("/login")
+      window.location.href = "/login"
       return
     }
 
