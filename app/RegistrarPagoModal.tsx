@@ -641,8 +641,7 @@ export function RegistrarPagoModal({
               setMultaSeleccionada("")
               setValorPago("")
               setMultasPendientes([])
-              setMensualidadesPendientes([])
-              setMensualidadSeleccionada("")
+              setMensualidadesSeleccionadas([])
               onClose()
             }}
             className="px-5 py-2.5 bg-[#1E293B]/60 border border-[#1E293B]/80 text-slate-300 hover:text-white hover:bg-[#1E293B] rounded-xl text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
