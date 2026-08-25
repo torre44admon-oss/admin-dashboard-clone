@@ -172,9 +172,25 @@ export async function GET(request: Request) {
     let lineasApartamentos: string[] = []
     let totalCopropiedad = 0
     let deudoresEncontrados = 0
-    const tasaMoraInfo = config.tasa_mora_anual ? config.tasa_mora_anual : 28.785
+    
+    // Obtener tasa mora desde la base de datos
+    const { data: tasaData } = await supabase
+      .from("configuracion_tasas_mora")
+      .select("*")
+      .order("id", { ascending: false })
+      .limit(1)
+
+    let tasaMoraInfo = 28.785
+    let diaCorteLimite = 10
+    if (tasaData && tasaData.length > 0) {
+      const t = tasaData[0]
+      const ibc = Number(t.ibc_banco_anual) || 19.19
+      const mult = Number(t.multiplicador_ley) || 1.5
+      tasaMoraInfo = ibc * mult
+      if (t.dia_limite_pago) diaCorteLimite = Number(t.dia_limite_pago)
+    }
+
     const tasaDiaria = Math.pow(1 + tasaMoraInfo / 100, 1 / 365) - 1
-    const diaCorteLimite = 10
 
     const formatoPesos = (val: number) => {
       return new Intl.NumberFormat("es-CO", {
@@ -208,12 +224,9 @@ export async function GET(request: Request) {
 
         const meses = deudasMens.map((m) => `${String(m.mes).toLowerCase()} de ${m.anio}`).join(", ")
         let subtotalMens = 0
-        
         deudasMens.forEach(m => {
           const valCuota = Number(m.valor) || 0
           subtotalMens += valCuota
-          
-          const esMesActual = String(m.mes).toLowerCase() === mesA && Number(m.anio) === anioA
           
           let fechaLim = m.fecha_limite ? new Date(m.fecha_limite) : null
           if (!fechaLim) {
@@ -225,7 +238,7 @@ export async function GET(request: Request) {
           const diffTime = hoyColombia.getTime() - fechaLim.getTime()
           const diasRetraso = diffTime > 0 ? Math.floor(diffTime / 86400000) : 0
           
-          if (diasRetraso > 0 && !esMesActual) {
+          if (diasRetraso > 0) {
             totalMoraGenerada += Math.round(valCuota * tasaDiaria * diasRetraso)
           }
         })
