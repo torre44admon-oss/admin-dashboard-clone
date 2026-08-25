@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
@@ -100,6 +100,7 @@ export function ConfiguracionContent() {
   const [botRailwayUrl, setBotRailwayUrl] = useState("")
   const [botApiKey, setBotApiKey] = useState("")
   const [botGrupoId, setBotGrupoId] = useState("")
+  const [botGrupoReportesId, setBotGrupoReportesId] = useState("")
   const [botEstado, setBotEstado] = useState<"connected"|"disconnected"|"waiting_qr"|"unknown"|"checking">("unknown")
   const [botGrupos, setBotGrupos] = useState<{id:string;name:string;participants:number}[]>([])
   const [guardandoBot, setGuardandoBot] = useState(false)
@@ -460,6 +461,7 @@ export function ConfiguracionContent() {
           if (b.railway_bot_url) setBotRailwayUrl(b.railway_bot_url)
           if (b.bot_api_key) setBotApiKey(b.bot_api_key)
           if (b.grupo_whatsapp_id) setBotGrupoId(b.grupo_whatsapp_id)
+          if (b.grupo_reportes_id) setBotGrupoReportesId(b.grupo_reportes_id)
           // Auto-chequear estado del bot al cargar la página
           if (b.railway_bot_url) {
             setBotEstado("checking")
@@ -2054,56 +2056,97 @@ export function ConfiguracionContent() {
 
           {/* Lista de grupos para seleccionar */}
           {botGrupos.length > 0 && (
-            <div className="bg-[#0b0f19] border border-[#2d3748] rounded-xl p-3">
-              <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wider">Selecciona el grupo destinatario:</p>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            <div className="bg-[#0b0f19] border border-[#2d3748] rounded-xl p-3 space-y-3">
+              <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Selecciona los grupos destinatarios:</p>
+              <div className="space-y-2 max-h-56 overflow-y-auto">
                 {botGrupos.map(g => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => { setBotGrupoId(g.id); toast.success(`Grupo seleccionado: ${g.name}`) }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
-                      botGrupoId === g.id
-                        ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300"
-                        : "hover:bg-[#1e293b] text-slate-300 border border-transparent"
-                    }`}
-                  >
-                    <span className="font-semibold">{g.name}</span>
-                    <span className="text-slate-500 text-xs ml-2">({g.participants} participantes)</span>
-                    {botGrupoId === g.id && <span className="ml-2 text-xs text-emerald-400">✓ Seleccionado</span>}
-                  </button>
+                  <div key={g.id} className="bg-[#151c2c] border border-[#2d3748] rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-slate-200 text-sm">{g.name}</p>
+                      <p className="text-slate-500 text-xs">{g.participants} participantes • <span className="font-mono text-[10px] text-slate-400">{g.id}</span></p>
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => { setBotGrupoId(g.id); toast.success(`Asignado a Comunicados Generales: ${g.name}`) }}
+                        className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          botGrupoId === g.id
+                            ? "bg-emerald-500 text-white shadow"
+                            : "bg-[#1e293b] hover:bg-[#2d3748] text-slate-300 border border-[#2d3748]"
+                        }`}
+                      >
+                        {botGrupoId === g.id ? "✓ Grupo 1 (Generales)" : "+ Grupo 1 (Generales)"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => { setBotGrupoReportesId(g.id); toast.success(`Asignado a Informes Privados: ${g.name}`) }}
+                        className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          botGrupoReportesId === g.id
+                            ? "bg-purple-600 text-white shadow"
+                            : "bg-[#1e293b] hover:bg-[#2d3748] text-slate-300 border border-[#2d3748]"
+                        }`}
+                      >
+                        {botGrupoReportesId === g.id ? "✓ Grupo 2 (Informes Privados)" : "+ Grupo 2 (Informes Privados)"}
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ID del grupo guardado */}
-          <div>
-            <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">
-              ID del Grupo WhatsApp (se guarda permanentemente)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={botGrupoId}
-                onChange={e => setBotGrupoId(e.target.value)}
-                placeholder="120363...@g.us"
-                className="flex-1 bg-[#0b0f19] border border-[#2d3748] rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
-              />
-              {botGrupoId && (
-                <button
-                  type="button"
-                  onClick={() => { setBotGrupoId(""); toast.info("ID del grupo borrado.") }}
-                  className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                  title="Borrar ID del grupo"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
+          {/* IDs de los dos grupos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">
+                📢 Grupo 1: Comunicados Generales (Toda la copropiedad)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={botGrupoId}
+                  onChange={e => setBotGrupoId(e.target.value)}
+                  placeholder="120363...@g.us"
+                  className="flex-1 bg-[#0b0f19] border border-[#2d3748] rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
+                />
+                {botGrupoId && (
+                  <button
+                    type="button"
+                    onClick={() => { setBotGrupoId(""); toast.info("Grupo 1 limpiado.") }}
+                    className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    title="Borrar Grupo 1"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mt-1.5">
-              ⚠️ El ID no cambia si cambias de número. Solo bórralo si el grupo fue eliminado.
-            </p>
+
+            <div>
+              <label className="block text-xs text-slate-400 font-semibold mb-1.5 uppercase tracking-wider">
+                🔒 Grupo 2: Cartera e Informes (Privado / Junta / Consejo)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={botGrupoReportesId}
+                  onChange={e => setBotGrupoReportesId(e.target.value)}
+                  placeholder="120363...@g.us"
+                  className="flex-1 bg-[#0b0f19] border border-[#2d3748] rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-purple-500 transition-colors font-mono"
+                />
+                {botGrupoReportesId && (
+                  <button
+                    type="button"
+                    onClick={() => { setBotGrupoReportesId(""); toast.info("Grupo 2 limpiado.") }}
+                    className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    title="Borrar Grupo 2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Guardar configuración del bot */}
@@ -2115,10 +2158,16 @@ export function ConfiguracionContent() {
               setGuardandoBot(true)
               try {
                 const { data: exist } = await supabase.from("configuracion_bot").select("id").order("id", { ascending: false }).limit(1)
+                const payload = {
+                  railway_bot_url: botRailwayUrl,
+                  bot_api_key: botApiKey,
+                  grupo_whatsapp_id: botGrupoId || null,
+                  grupo_reportes_id: botGrupoReportesId || null
+                }
                 if (exist && exist.length > 0) {
-                  await supabase.from("configuracion_bot").update({ railway_bot_url: botRailwayUrl, bot_api_key: botApiKey, grupo_whatsapp_id: botGrupoId || null }).eq("id", exist[0].id)
+                  await supabase.from("configuracion_bot").update(payload).eq("id", exist[0].id)
                 } else {
-                  await supabase.from("configuracion_bot").insert({ railway_bot_url: botRailwayUrl, bot_api_key: botApiKey, grupo_whatsapp_id: botGrupoId || null })
+                  await supabase.from("configuracion_bot").insert(payload)
                 }
                 toast.success("✅ Configuración del bot guardada correctamente.")
               } catch { toast.error("Error al guardar la configuración del bot.") }

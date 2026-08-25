@@ -287,32 +287,34 @@ export async function GET(request: Request) {
       try {
         const { data: botConfig } = await supabase
           .from("configuracion_bot")
-          .select("grupo_whatsapp_id, railway_bot_url, bot_api_key")
-        .order("id", { ascending: false })
-        .limit(1)
+          .select("grupo_whatsapp_id, grupo_reportes_id, railway_bot_url, bot_api_key")
+          .order("id", { ascending: false })
+          .limit(1)
 
-      const bot = botConfig?.[0]
-      if (bot?.grupo_whatsapp_id && bot?.railway_bot_url && bot?.bot_api_key) {
-        const cleanUrl = bot.railway_bot_url.replace(/\/$/, "")
-        const botRes = await fetch(`${cleanUrl}/send-group`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": bot.bot_api_key
-          },
-          body: JSON.stringify({
-            groupId: bot.grupo_whatsapp_id,
-            message: mensajeReporte
+        const bot = botConfig?.[0]
+        const targetGroup = bot?.grupo_reportes_id || bot?.grupo_whatsapp_id
+
+        if (targetGroup && bot?.railway_bot_url && bot?.bot_api_key) {
+          const cleanUrl = bot.railway_bot_url.replace(/\/$/, "")
+          const botRes = await fetch(`${cleanUrl}/send-group`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": bot.bot_api_key
+            },
+            body: JSON.stringify({
+              groupId: targetGroup,
+              message: mensajeReporte
+            })
           })
-        })
-        const botData = await botRes.json()
-        botResult = { ok: botRes.ok, data: botData }
-      } else {
-        botResult = { ok: false, error: "Bot no configurado completamente en la BD" }
+          const botData = await botRes.json()
+          botResult = { ok: botRes.ok, data: botData }
+        } else {
+          botResult = { ok: false, error: "Bot no configurado completamente en la BD" }
+        }
+      } catch (botErr: any) {
+        botResult = { ok: false, error: botErr.message }
       }
-    } catch (botErr: any) {
-      botResult = { ok: false, error: botErr.message }
-    }
     }
 
     if ((anySuccess || botResult?.ok) && !isManual) {
