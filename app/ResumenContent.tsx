@@ -19,6 +19,7 @@ import { AsignarMultaModal } from "./AsignarMultaModal"
 import { RegistrarPagoModal } from "./RegistrarPagoModal"
 import { AsignarProyectoModal } from "./AsignarProyectoModal"
 import { VerTodosPagosModal } from "./VerTodosPagosModal"
+import { AgregarCarteraModal } from "./AgregarCarteraModal"
 import { toast } from "sonner"
 
 interface Props {
@@ -43,6 +44,7 @@ export function ResumenContent({
   const [isRegistrarPagoOpen, setIsRegistrarPagoOpen] = useState(false)
   const [isAsignarProyectoOpen, setIsAsignarProyectoOpen] = useState(false)
   const [isVerTodosOpen, setIsVerTodosOpen] = useState(false)
+  const [isAgregarCarteraOpen, setIsAgregarCarteraOpen] = useState(false)
 
   const [todosLosPagos, setTodosLosPagos] = useState<any[]>([])
   const [ultimosPagos, setUltimosPagos] = useState<any[]>([])
@@ -615,6 +617,21 @@ export function ResumenContent({
                 </button>
               </div>
 
+              {/* Action 4: Agregar Deuda a Cartera */}
+              <div className="flex justify-between items-center py-2.5 border-b border-[#1E293B]/20 last:border-0">
+                <div>
+                  <h5 className="text-sm font-semibold text-white">Agregar Deuda</h5>
+                  <p className="text-[11px] text-slate-400">Cargar deuda de administración anterior</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAgregarCarteraOpen(true)}
+                  className="bg-[#1E293B]/60 hover:bg-[#1E293B] text-slate-300 hover:text-white px-4 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Cargar
+                </button>
+              </div>
+
             </div>
           </div>
 
@@ -664,6 +681,12 @@ export function ResumenContent({
         isOpen={isVerTodosOpen}
         onClose={() => setIsVerTodosOpen(false)}
         pagos={todosLosPagos}
+        apartamentos={apartamentos}
+      />
+
+      <AgregarCarteraModal
+        isOpen={isAgregarCarteraOpen}
+        onClose={() => setIsAgregarCarteraOpen(false)}
         apartamentos={apartamentos}
       />
 
