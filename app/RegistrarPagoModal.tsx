@@ -59,7 +59,9 @@ export function RegistrarPagoModal({
         const ibc = Number(t.ibc_banco_anual) || 19.19
         const mult = Number(t.multiplicador_ley) || 1.5
         const usuraAnual = ibc * mult
-        setTasaDiariaConfig(Math.pow(1 + usuraAnual / 100, 1 / 365) - 1)
+        let rate = Math.pow(1 + usuraAnual / 100, 1 / 365) - 1
+        if (t.cobrar_mora === false) rate = 0
+        setTasaDiariaConfig(rate)
       }
     }
     

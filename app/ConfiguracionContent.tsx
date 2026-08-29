@@ -39,6 +39,7 @@ export function ConfiguracionContent() {
   const [diaPagoCuota, setDiaPagoCuota] = useState("5")
   const [diasVencimientoMulta, setDiasVencimientoMulta] = useState("15")
   const [diasVencimientoProyecto, setDiasVencimientoProyecto] = useState("30")
+  const [cobrarMoraActiva, setCobrarMoraActiva] = useState(true)
   const [telefonoReportes, setTelefonoReportes] = useState("")
   const [admins, setAdmins] = useState<{ phone: string; reports: boolean; commands: boolean }[]>([
     { phone: "", reports: true, commands: true }
@@ -380,6 +381,7 @@ export function ConfiguracionContent() {
           if (r.dia_limite_pago != null) { setDiaPagoCuota(String(r.dia_limite_pago)); localStorage.setItem("dia_pago_cuota", String(r.dia_limite_pago)) }
           if (r.dias_gracia_multas != null) { setDiasVencimientoMulta(String(r.dias_gracia_multas)); localStorage.setItem("dias_vencimiento_multa", String(r.dias_gracia_multas)) }
           if (r.dias_gracia_proyectos != null) { setDiasVencimientoProyecto(String(r.dias_gracia_proyectos)); localStorage.setItem("dias_vencimiento_proyecto", String(r.dias_gracia_proyectos)) }
+          if (r.cobrar_mora != null) { setCobrarMoraActiva(Boolean(r.cobrar_mora)); localStorage.setItem("cobrar_mora", String(r.cobrar_mora)) }
         }
 
         // Configuración torre
@@ -515,6 +517,7 @@ export function ConfiguracionContent() {
           dia_limite_pago: parseInt(diaPagoCuota) || 5,
           dias_gracia_multas: parseInt(diasVencimientoMulta) || 15,
           dias_gracia_proyectos: parseInt(diasVencimientoProyecto) || 60,
+          cobrar_mora: cobrarMoraActiva,
           telefono_reportes: telefonoReportes,
           dia_reporte_automatico: parseInt(diaReporteAutomatico) || 28,
           hora_reporte_automatico: convertirA24h(horaRep, minutoRep, periodoRep),
@@ -598,7 +601,8 @@ export function ConfiguracionContent() {
         ano_vigencia: anoVigente,
         dia_limite_pago: parseInt(diaPagoCuota) || 5,
         dias_gracia_multas: parseInt(diasVencimientoMulta) || 15,
-        dias_gracia_proyectos: parseInt(diasVencimientoProyecto) || 60
+        dias_gracia_proyectos: parseInt(diasVencimientoProyecto) || 60,
+        cobrar_mora: cobrarMoraActiva,
       }, { onConflict: "mes_vigencia,ano_vigencia" })
 
       // configuracion_torre
@@ -1296,18 +1300,36 @@ export function ConfiguracionContent() {
                 </p>
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
-                      Interés Bancario Corriente (IBC % Anual)
+                  <div className="flex items-center justify-between bg-[#1B2336] border border-[#1E293B]/80 p-3 rounded-xl">
+                    <div>
+                      <h4 className="text-sm font-semibold text-white">Habilitar cobro de Mora</h4>
+                      <p className="text-[10px] text-slate-400">Si se desactiva, no se calcularán ni cobrarán intereses en todo el sistema.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={cobrarMoraActiva}
+                        onChange={(e) => setCobrarMoraActiva(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: 19,19"
-                      value={ibcAnual}
-                      onChange={(e) => setIbcAnual(e.target.value)}
-                      className="w-full bg-[#131926] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
-                    />
                   </div>
+
+                  {cobrarMoraActiva && (
+                    <>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                          Interés Bancario Corriente (IBC % Anual)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: 19,19"
+                          value={ibcAnual}
+                          onChange={(e) => setIbcAnual(e.target.value)}
+                          className="w-full bg-[#131926] border border-[#1E293B]/80 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-600"
+                        />
+                      </div>
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
@@ -1345,6 +1367,8 @@ export function ConfiguracionContent() {
                   >
                     Actualizar Tasas
                   </button>
+                    </>
+                  )}
                 </div>
               </div>
 

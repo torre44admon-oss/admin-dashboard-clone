@@ -182,15 +182,17 @@ export async function GET(request: Request) {
 
     let tasaMoraInfo = 28.785
     let diaCorteLimite = 10
+    let cobrarMoraActiva = true
     if (tasaData && tasaData.length > 0) {
       const t = tasaData[0]
       const ibc = Number(t.ibc_banco_anual) || 19.19
       const mult = Number(t.multiplicador_ley) || 1.5
       tasaMoraInfo = ibc * mult
       if (t.dia_limite_pago) diaCorteLimite = Number(t.dia_limite_pago)
+      if (t.cobrar_mora !== undefined && t.cobrar_mora !== null) cobrarMoraActiva = Boolean(t.cobrar_mora)
     }
 
-    const tasaDiaria = Math.pow(1 + tasaMoraInfo / 100, 1 / 365) - 1
+    const tasaDiaria = cobrarMoraActiva ? (Math.pow(1 + tasaMoraInfo / 100, 1 / 365) - 1) : 0
 
     const formatoPesos = (val: number) => {
       return new Intl.NumberFormat("es-CO", {

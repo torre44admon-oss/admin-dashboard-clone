@@ -139,6 +139,7 @@ export function AvisosCobroContent({ apartamentos }: Props) {
           const mapaTasas: Record<string, { ibc: number, mult: number }> = {}
           let dbGraciaMulta = 15
           let dbGraciaProyecto = 60
+          let cobrarMoraActiva = true
 
           if (tasasHistoricas) {
             tasasHistoricas.forEach((t: any) => {
@@ -155,6 +156,9 @@ export function AvisosCobroContent({ apartamentos }: Props) {
               }
               if (ultimoRegistro.dias_gracia_proyectos !== undefined && ultimoRegistro.dias_gracia_proyectos !== null) {
                 dbGraciaProyecto = ultimoRegistro.dias_gracia_proyectos
+              }
+              if (ultimoRegistro.cobrar_mora !== undefined && ultimoRegistro.cobrar_mora !== null) {
+                cobrarMoraActiva = Boolean(ultimoRegistro.cobrar_mora)
               }
             }
           }
@@ -310,6 +314,10 @@ export function AvisosCobroContent({ apartamentos }: Props) {
                 interesAcumuladoTotal += interesMora
               }
             })
+          }
+
+          if (!cobrarMoraActiva) {
+            interesAcumuladoTotal = 0
           }
 
           setInteresMoraCalculado(interesAcumuladoTotal)
