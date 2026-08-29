@@ -117,13 +117,13 @@ export async function GET(request: Request) {
       })
     }
 
-    // 5. Días de gracia desde tasas_mora
+    // 5. Días de gracia y mora desde tasas_mora
     const { data: configMoraData } = await supabase
       .from("configuracion_tasas_mora")
-      .select("dia_limite_pago, dias_gracia_multas, dias_gracia_proyectos")
+      .select("dia_limite_pago, dias_gracia_multas, dias_gracia_proyectos, cobrar_mora")
       .order("id", { ascending: false })
       .limit(1)
-    const configMora = configMoraData?.[0] || { dia_limite_pago: 5, dias_gracia_multas: 15, dias_gracia_proyectos: 60 }
+    const configMora = configMoraData?.[0] || { dia_limite_pago: 5, dias_gracia_multas: 15, dias_gracia_proyectos: 60, cobrar_mora: true }
 
     // 6. Obtener Unidades
     let queryUnidades = supabase.from("unidades").select("*")
@@ -292,6 +292,11 @@ export async function GET(request: Request) {
               monto: sumaMesesPasados
             })
           }
+        }
+
+        const cobrarMoraActiva = configMora.cobrar_mora !== undefined && configMora.cobrar_mora !== null ? Boolean(configMora.cobrar_mora) : true
+        if (!cobrarMoraActiva) {
+          interesMoraAcumulado = 0
         }
 
         // 2. Intereses de Mora
